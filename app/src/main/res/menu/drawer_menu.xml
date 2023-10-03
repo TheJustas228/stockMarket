@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ic_home"
+            android:title="Home" />
+        <item
+            android:id="@+id/nav_stock_market"
+            android:icon="@drawable/ic_stock_market"
+            android:title="The Stock Market" />
+        <item
+            android:id="@+id/nav_friends"
+            android:icon="@drawable/ic_friends"
+            android:title="Friends" />
+        <item
+            android:id="@+id/nav_options"
+            android:icon="@drawable/ic_options"
+            android:title="Options" />
+    </group>
+</menu>
