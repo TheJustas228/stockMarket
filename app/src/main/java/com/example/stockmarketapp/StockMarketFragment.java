@@ -15,12 +15,17 @@ import com.example.stockmarketapp.adapters.StockAdapter;
 import com.example.stockmarketapp.models.Stock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import android.util.Log;
 import com.example.stockmarketapp.api.ApiClient;
 import com.example.stockmarketapp.api.AlphaVantageService;
 import com.example.stockmarketapp.models.StockResponse;
+import com.google.gson.Gson;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.example.stockmarketapp.BuildConfig;
+
 
 public class StockMarketFragment extends Fragment {
 
@@ -49,21 +54,53 @@ public class StockMarketFragment extends Fragment {
 
     private void fetchStockMarketStocks() {
         AlphaVantageService service = ApiClient.getService();
-        Call<StockResponse> call = service.getStockInfo("TIME_SERIES_DAILY", "IBM", "CZX3RFB37AMFOXWL");
+        Call<StockResponse> call = service.getStockInfo("TIME_SERIES_DAILY", "AAPL", BuildConfig.ALPHA_VANTAGE_API_KEY);
         call.enqueue(new Callback<StockResponse>() {
             @Override
             public void onResponse(Call<StockResponse> call, Response<StockResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // TODO: Extract stock data from response.body() and update UI
-                    // Example: String openPrice = response.body().getTimeSeries().getDailyData().getOpen();
+                    Log.d("API_RAW_RESPONSE", response.raw().toString());
+                    // Convert the response body to a JSON string and log it
+                    String jsonResponse = new Gson().toJson(response.body());
+                    Log.d("API_RESPONSE", jsonResponse);
+                    if (!response.isSuccessful()) {
+                        Log.e("API_ERROR", "Response Code: " + response.code());
+                        emptyViewStockMarket.setText("Error Code: " + response.code());
+                        emptyViewStockMarket.setVisibility(View.VISIBLE);
+                        return;
+                    }
+
+                    StockResponse.TimeSeries timeSeries = response.body().getTimeSeries();
+                    Map<String, StockResponse.DailyData> dailyDataMap = timeSeries.getDailyDataMap();
+
+                    if (dailyDataMap == null || dailyDataMap.isEmpty()) {
+                        emptyViewStockMarket.setText("No time series data available for the selected stock.");
+                        emptyViewStockMarket.setVisibility(View.VISIBLE);
+                        return;  // Exit the method early
+                    }
+
+                    // Get the most recent date's data
+                    StockResponse.DailyData dailyData = dailyDataMap.values().iterator().next();
+                    if (dailyData != null) {
+                        String openPrice = dailyData.getOpen();
+                        // Create a new Stock object and add it to the stockMarketStocks list
+                        Stock stock = new Stock("AAPL", Double.parseDouble(openPrice), 0.0); // Placeholder for change
+                        stockMarketStocks.add(stock);
+                        stockAdapter.notifyDataSetChanged();
+                        emptyViewStockMarket.setVisibility(View.GONE);
+                    } else {
+                        emptyViewStockMarket.setText("No daily data available.");
+                        emptyViewStockMarket.setVisibility(View.VISIBLE);
+                    }
                 } else {
-                    // TODO: Handle error - show error message or another appropriate feedback to the user
+                    emptyViewStockMarket.setText("Error fetching stock data.");
+                    emptyViewStockMarket.setVisibility(View.VISIBLE);
                 }
             }
-
             @Override
             public void onFailure(Call<StockResponse> call, Throwable t) {
-                // TODO: Handle failure - show error message or another appropriate feedback to the user
+                emptyViewStockMarket.setText("Failed to fetch stock data. Please check your internet connection.");
+                emptyViewStockMarket.setVisibility(View.VISIBLE);
             }
         });
     }

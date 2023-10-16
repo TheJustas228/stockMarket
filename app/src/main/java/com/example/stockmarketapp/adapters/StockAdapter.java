@@ -24,14 +24,15 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.stock_item, parent, false);
         return new StockViewHolder(view);
     }
-
     @Override
     public void onBindViewHolder(@NonNull StockViewHolder holder, int position) {
         Stock stock = stocks.get(position);
         holder.stockName.setText(stock.getName());
-        holder.stockPrice.setText(String.valueOf(stock.getPrice()));
-        holder.stockChange.setText(String.valueOf(stock.getChange()));
+        holder.stockPrice.setText(String.format("Price: $%.2f", stock.getPrice()));
+        // For now, we're not displaying the change, so you can comment out or remove the next line
+        // holder.stockChange.setText(String.valueOf(stock.getChange()));
     }
+
 
     @Override
     public int getItemCount() {

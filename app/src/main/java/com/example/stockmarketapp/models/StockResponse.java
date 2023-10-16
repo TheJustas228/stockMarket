@@ -3,6 +3,8 @@ package com.example.stockmarketapp.models;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.Map;
+
 public class StockResponse {
     @SerializedName("Time Series (Daily)") // Update this based on actual API response
     private TimeSeries timeSeries;
@@ -12,12 +14,11 @@ public class StockResponse {
     }
 
     public static class TimeSeries {
-        // Your fields here. Example:
-        @SerializedName("2022-09-20") // Use actual keys from API response
-        private DailyData dailyData;
+        @SerializedName("Time Series (Daily)")
+        private Map<String, DailyData> dailyDataMap;
 
-        public DailyData getDailyData() {
-            return dailyData;
+        public Map<String, DailyData> getDailyDataMap() {
+            return dailyDataMap;
         }
     }
 
