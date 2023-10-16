@@ -1,3 +1,4 @@
+//C:\Users\User\AndroidStudioProjects\StockMarketApp\app\src\main\java\com\example\stockmarketapp\StockMarketFragment.java
 package com.example.stockmarketapp;
 
 import android.os.Bundle;
@@ -14,6 +15,12 @@ import com.example.stockmarketapp.adapters.StockAdapter;
 import com.example.stockmarketapp.models.Stock;
 import java.util.ArrayList;
 import java.util.List;
+import com.example.stockmarketapp.api.ApiClient;
+import com.example.stockmarketapp.api.AlphaVantageService;
+import com.example.stockmarketapp.models.StockResponse;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class StockMarketFragment extends Fragment {
 
@@ -41,15 +48,23 @@ public class StockMarketFragment extends Fragment {
     }
 
     private void fetchStockMarketStocks() {
-        // TODO: Fetch the list of stocks for the stock market (from an API, database, or mock data for now)
+        AlphaVantageService service = ApiClient.getService();
+        Call<StockResponse> call = service.getStockInfo("TIME_SERIES_DAILY", "IBM", "CZX3RFB37AMFOXWL");
+        call.enqueue(new Callback<StockResponse>() {
+            @Override
+            public void onResponse(Call<StockResponse> call, Response<StockResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    // TODO: Extract stock data from response.body() and update UI
+                    // Example: String openPrice = response.body().getTimeSeries().getDailyData().getOpen();
+                } else {
+                    // TODO: Handle error - show error message or another appropriate feedback to the user
+                }
+            }
 
-        // For now, let's add some mock data
-        stockMarketStocks.add(new Stock("AAPL", 150.00, 2.50));
-        stockMarketStocks.add(new Stock("GOOGL", 2800.00, -15.00));
-        stockMarketStocks.add(new Stock("AMZN", 3300.00, 25.00));
-
-        stockAdapter.notifyDataSetChanged();
-
-        emptyViewStockMarket.setVisibility(stockMarketStocks.isEmpty() ? View.VISIBLE : View.GONE);
+            @Override
+            public void onFailure(Call<StockResponse> call, Throwable t) {
+                // TODO: Handle failure - show error message or another appropriate feedback to the user
+            }
+        });
     }
 }
