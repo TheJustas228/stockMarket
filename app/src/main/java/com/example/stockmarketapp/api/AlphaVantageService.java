@@ -7,9 +7,7 @@ import retrofit2.http.Query;
 
 public interface AlphaVantageService {
     @GET("query")
-    Call<StockResponse> getStockInfo(
-            @Query("function") String function,
-            @Query("symbol") String symbol,
-            @Query("apikey") String apiKey
-    );
+    Call<StockResponse> getStockData(@Query("function") String function,
+                                     @Query("symbol") String symbol,
+                                     @Query("apikey") String apiKey);
 }

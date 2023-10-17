@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import java.util.Map;
 
 public class StockResponse {
-    @SerializedName("Time Series (Daily)") // Update this based on actual API response
+    @SerializedName("Time Series (Daily)") // This annotation is correct for the outer class
     private TimeSeries timeSeries;
 
     public TimeSeries getTimeSeries() {
@@ -14,7 +14,7 @@ public class StockResponse {
     }
 
     public static class TimeSeries {
-        @SerializedName("Time Series (Daily)")
+        // Removed the redundant annotation from here
         private Map<String, DailyData> dailyDataMap;
 
         public Map<String, DailyData> getDailyDataMap() {

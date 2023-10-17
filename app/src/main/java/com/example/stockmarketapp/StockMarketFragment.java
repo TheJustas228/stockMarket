@@ -1,4 +1,3 @@
-//C:\Users\User\AndroidStudioProjects\StockMarketApp\app\src\main\java\com\example\stockmarketapp\StockMarketFragment.java
 package com.example.stockmarketapp;
 
 import android.os.Bundle;
@@ -13,6 +12,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.stockmarketapp.adapters.StockAdapter;
 import com.example.stockmarketapp.models.Stock;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +28,6 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import com.example.stockmarketapp.BuildConfig;
-
 
 public class StockMarketFragment extends Fragment {
 
@@ -53,38 +55,32 @@ public class StockMarketFragment extends Fragment {
     }
 
     private void fetchStockMarketStocks() {
-        AlphaVantageService service = ApiClient.getService();
-        Call<StockResponse> call = service.getStockInfo("TIME_SERIES_DAILY", "AAPL", BuildConfig.ALPHA_VANTAGE_API_KEY);
+        Log.d("API_CALL", "Making API call...");
+
+        AlphaVantageService service = ApiClient.getClient().create(AlphaVantageService.class);
+        Call<StockResponse> call = service.getStockData("TIME_SERIES_DAILY", "AAPL", BuildConfig.ALPHA_VANTAGE_API_KEY);
+
         call.enqueue(new Callback<StockResponse>() {
             @Override
             public void onResponse(Call<StockResponse> call, Response<StockResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d("API_RAW_RESPONSE", response.raw().toString());
-                    // Convert the response body to a JSON string and log it
-                    String jsonResponse = new Gson().toJson(response.body());
-                    Log.d("API_RESPONSE", jsonResponse);
-                    if (!response.isSuccessful()) {
-                        Log.e("API_ERROR", "Response Code: " + response.code());
-                        emptyViewStockMarket.setText("Error Code: " + response.code());
-                        emptyViewStockMarket.setVisibility(View.VISIBLE);
-                        return;
-                    }
+                Log.d("API_ON_RESPONSE", "Response received");
 
-                    StockResponse.TimeSeries timeSeries = response.body().getTimeSeries();
+                if (response.isSuccessful() && response.body() != null) {
+                    StockResponse stockResponse = response.body();
+                    StockResponse.TimeSeries timeSeries = stockResponse.getTimeSeries();
                     Map<String, StockResponse.DailyData> dailyDataMap = timeSeries.getDailyDataMap();
 
                     if (dailyDataMap == null || dailyDataMap.isEmpty()) {
                         emptyViewStockMarket.setText("No time series data available for the selected stock.");
                         emptyViewStockMarket.setVisibility(View.VISIBLE);
-                        return;  // Exit the method early
+                        return;
                     }
 
                     // Get the most recent date's data
                     StockResponse.DailyData dailyData = dailyDataMap.values().iterator().next();
                     if (dailyData != null) {
                         String openPrice = dailyData.getOpen();
-                        // Create a new Stock object and add it to the stockMarketStocks list
-                        Stock stock = new Stock("AAPL", Double.parseDouble(openPrice), 0.0); // Placeholder for change
+                        Stock stock = new Stock("AAPL", Double.parseDouble(openPrice), 0.0);
                         stockMarketStocks.add(stock);
                         stockAdapter.notifyDataSetChanged();
                         emptyViewStockMarket.setVisibility(View.GONE);
@@ -93,13 +89,17 @@ public class StockMarketFragment extends Fragment {
                         emptyViewStockMarket.setVisibility(View.VISIBLE);
                     }
                 } else {
-                    emptyViewStockMarket.setText("Error fetching stock data.");
+                    emptyViewStockMarket.setText("Error fetching stock data from server.");
                     emptyViewStockMarket.setVisibility(View.VISIBLE);
                 }
+                Log.d("API_RESPONSE", new Gson().toJson(response.body()));
             }
+
             @Override
             public void onFailure(Call<StockResponse> call, Throwable t) {
-                emptyViewStockMarket.setText("Failed to fetch stock data. Please check your internet connection.");
+                Log.d("API_ON_FAILURE", "API call failed");
+                t.printStackTrace();
+                emptyViewStockMarket.setText("Error fetching stock data from server.");
                 emptyViewStockMarket.setVisibility(View.VISIBLE);
             }
         });
