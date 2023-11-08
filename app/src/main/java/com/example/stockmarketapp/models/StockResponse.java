@@ -1,20 +1,25 @@
-// StockResponse.java
 package com.example.stockmarketapp.models;
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.Map;
 
 public class StockResponse {
-    @SerializedName("Time Series (Daily)") // This annotation is correct for the outer class
-    private TimeSeries timeSeries;
+    @SerializedName("Time Series (Daily)")
+    private Map<String, DailyData> timeSeries;
 
-    public TimeSeries getTimeSeries() {
+    public Map<String, DailyData> getTimeSeries() {
         return timeSeries;
     }
 
+    @Override
+    public String toString() {
+        // Convert the object to its JSON representation using Gson
+        return new Gson().toJson(this);
+    }
+
     public static class TimeSeries {
-        // Removed the redundant annotation from here
         private Map<String, DailyData> dailyDataMap;
 
         public Map<String, DailyData> getDailyDataMap() {
@@ -27,8 +32,13 @@ public class StockResponse {
         private String open;
         @SerializedName("2. high")
         private String high;
-        // Add other fields as per API response
+        @SerializedName("4. close")
+        private String close;
+        @SerializedName("5. volume")
+        private String volume;
 
+        public String getClose() { return close; }
+        public String getVolume() { return volume; }
         public String getOpen() {
             return open;
         }

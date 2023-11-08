@@ -45,9 +45,9 @@ public class HomeFragment extends Fragment {
     private void fetchTrackedStocks() {
         // TODO: Fetch the list of tracked stocks (from a database, API, or mock data for now)
 
-        // For now, let's add some mock data
-        trackedStocks.add(new Stock("AAPL", 150.00, 2.50));
-        trackedStocks.add(new Stock("GOOGL", 2800.00, -15.00));
+        // For now, let's add some mock data with volume
+        trackedStocks.add(new Stock("AAPL", 150.00, 152.50, 5000000L));
+        trackedStocks.add(new Stock("GOOGL", 2800.00, 2785.00, 3000000L));
 
         // Update the RecyclerView
         stockAdapter.notifyDataSetChanged();
