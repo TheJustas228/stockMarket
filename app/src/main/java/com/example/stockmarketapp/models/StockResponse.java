@@ -36,15 +36,17 @@ public class StockResponse {
         private String close;
         @SerializedName("5. volume")
         private String volume;
+        @SerializedName("6. low")
+        private String low;
 
         public String getClose() { return close; }
         public String getVolume() { return volume; }
         public String getOpen() {
             return open;
         }
-
         public String getHigh() {
             return high;
         }
+        public String getLow() { return low; }
     }
 }

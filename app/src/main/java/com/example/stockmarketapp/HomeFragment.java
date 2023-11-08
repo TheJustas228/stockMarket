@@ -15,7 +15,7 @@ import com.example.stockmarketapp.adapters.StockAdapter;
 import java.util.List;
 
 
-public class HomeFragment extends Fragment {
+public class HomeFragment extends Fragment implements StockAdapter.OnClickListener {
 
     private RecyclerView trackedStocksRecyclerView;
     private TextView emptyView;
@@ -32,13 +32,10 @@ public class HomeFragment extends Fragment {
 
         // Initialize the list and adapter
         trackedStocks = new ArrayList<>();
-        stockAdapter = new StockAdapter(trackedStocks);
+        stockAdapter = new StockAdapter(trackedStocks, this);
         trackedStocksRecyclerView.setAdapter(stockAdapter);
         trackedStocksRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        // Fetch and display tracked stocks
         fetchTrackedStocks();
-
         return view;
     }
 
@@ -46,13 +43,17 @@ public class HomeFragment extends Fragment {
         // TODO: Fetch the list of tracked stocks (from a database, API, or mock data for now)
 
         // For now, let's add some mock data with volume
-        trackedStocks.add(new Stock("AAPL", 150.00, 152.50, 5000000L));
-        trackedStocks.add(new Stock("GOOGL", 2800.00, 2785.00, 3000000L));
+        trackedStocks.add(new Stock("AAPL", 150.00, 152.50, 149.00, 151.00, 5000000L)); // Fix here
+        trackedStocks.add(new Stock("GOOGL", 2800.00, 2820.00, 2780.00, 2805.00, 3000000L)); // Fix here
 
         // Update the RecyclerView
         stockAdapter.notifyDataSetChanged();
 
         // Show/hide the empty view based on the list size
         emptyView.setVisibility(trackedStocks.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+    @Override
+    public void onStockClicked(Stock stock) {
+        // Implement what happens when a stock is clicked
     }
 }

@@ -12,10 +12,16 @@ import java.util.List;
 
 public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHolder> {
 
+    private Stock stock;
+    private OnClickListener onClickListener;
     private List<Stock> stocks;
 
-    public StockAdapter(List<Stock> stocks) {
+    public interface OnClickListener {
+        void onStockClicked(Stock stock);
+    }
+    public StockAdapter(List<Stock> stocks, OnClickListener onClickListener) {
         this.stocks = stocks;
+        this.onClickListener = onClickListener;
     }
 
     @NonNull
@@ -28,10 +34,10 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
     @Override
     public void onBindViewHolder(@NonNull StockViewHolder holder, int position) {
         Stock stock = stocks.get(position);
-        holder.stockName.setText(stock.getName()); // The name field is being used for the date
-        holder.stockPrice.setText(String.format("Open Price: $%.2f", stock.getPrice())); // Use getPrice() for open price
-        holder.stockChange.setText(String.format("Change: $%.2f", stock.getChange())); // Use getChange() for price change
-        holder.stockVolume.setText(String.format("Volume: %d", stock.getVolume()));
+        holder.stockName.setText(stock.getName());
+        holder.stockPrice.setText(String.format("Close Price: $%.2f", stock.getClosePrice()));
+        holder.stockChange.setText(String.format("Change: $%.2f", stock.getChange()));
+        holder.itemView.setOnClickListener(v -> onClickListener.onStockClicked(stock));
     }
 
     @Override
@@ -40,14 +46,13 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
     }
 
     static class StockViewHolder extends RecyclerView.ViewHolder {
-        TextView stockName, stockPrice, stockChange, stockVolume;
+        TextView stockName, stockPrice, stockChange;
 
         StockViewHolder(@NonNull View itemView) {
             super(itemView);
             stockName = itemView.findViewById(R.id.stockName);
             stockPrice = itemView.findViewById(R.id.stockPrice);
             stockChange = itemView.findViewById(R.id.stockChange);
-            stockVolume = itemView.findViewById(R.id.stockVolume);
         }
     }
 }

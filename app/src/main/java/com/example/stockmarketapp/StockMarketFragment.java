@@ -22,13 +22,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import androidx.appcompat.app.AlertDialog;
 
-public class StockMarketFragment extends Fragment {
+public class StockMarketFragment extends Fragment implements StockAdapter.OnClickListener {
 
     private RecyclerView stockMarketRecyclerView;
     private TextView emptyViewStockMarket;
     private List<Stock> stockMarketStocks;
     private StockAdapter stockAdapter;
+    private Stock selectedStock;
 
     @Nullable
     @Override
@@ -37,7 +39,7 @@ public class StockMarketFragment extends Fragment {
         stockMarketRecyclerView = view.findViewById(R.id.stockMarketRecyclerView);
         emptyViewStockMarket = view.findViewById(R.id.emptyViewStockMarket);
         stockMarketStocks = new ArrayList<>();
-        stockAdapter = new StockAdapter(stockMarketStocks);
+        stockAdapter = new StockAdapter(stockMarketStocks, this);
         stockMarketRecyclerView.setAdapter(stockAdapter);
         stockMarketRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
@@ -46,7 +48,32 @@ public class StockMarketFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onStockClicked(Stock stock) {
+        selectedStock = stock;
+        // Show a dialog or navigate to another fragment/activity with the stock details
+        showStockDetails(stock);
+    }
+
+    private void showStockDetails(Stock stock) {
+        // Inflate the dialog_stock_detail.xml layout
+        LayoutInflater inflater = getLayoutInflater();
+        View view = inflater.inflate(R.layout.dialog_stock_detail, null);
+
+        // Set the text of each TextView to show the stock details
+        ((TextView) view.findViewById(R.id.tvDate)).setText("Date: " + stock.getName()); // Assuming the name is the date
+        // Populate other TextViews with stock.getOpenPrice(), stock.getHighPrice(), etc.
+
+        // Create and show the AlertDialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setView(view)
+                .setPositiveButton("OK", null);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
     private void fetchStockMarketStocks() {
+
         OkHttpClient client = new OkHttpClient();
 
         Request request = new Request.Builder()
@@ -85,10 +112,12 @@ public class StockMarketFragment extends Fragment {
                                 StockResponse.DailyData dailyData = entry.getValue();
                                 if (dailyData != null) {
                                     String date = entry.getKey();
-                                    double openPrice = Double.parseDouble(dailyData.getOpen());
-                                    double closePrice = Double.parseDouble(dailyData.getClose());
-                                    long volume = Long.parseLong(dailyData.getVolume().replaceAll(",", ""));
-                                    Stock stock = new Stock(date, openPrice, closePrice, volume);
+                                    double openPrice = parseDoubleSafely(dailyData.getOpen());
+                                    double highPrice = parseDoubleSafely(dailyData.getHigh());
+                                    double lowPrice = parseDoubleSafely(dailyData.getLow());
+                                    double closePrice = parseDoubleSafely(dailyData.getClose());
+                                    long volume = parseLongSafely(dailyData.getVolume());
+                                    Stock stock = new Stock(date, openPrice, highPrice, lowPrice, closePrice, volume);
                                     stockMarketStocks.add(stock);
                                 }
                             }
@@ -124,5 +153,19 @@ public class StockMarketFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private double parseDoubleSafely(String numberStr) {
+        if (numberStr != null && !numberStr.trim().isEmpty()) {
+            return Double.parseDouble(numberStr.trim());
+        }
+        return 0.0; // or some other default value
+    }
+
+    private long parseLongSafely(String numberStr) {
+        if (numberStr != null && !numberStr.trim().isEmpty()) {
+            return Long.parseLong(numberStr.trim().replaceAll(",", ""));
+        }
+        return 0L; // or some other default value
     }
 }
