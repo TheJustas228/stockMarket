@@ -11,7 +11,7 @@ public class Stock implements Serializable {
     private double change;
     private long volume;
 
-    public Stock(String name, double openPrice, double highPrice, double lowPrice, double closePrice, long volume) {
+    public Stock(String name, double openPrice, double highPrice, double lowPrice, double closePrice, double change, long volume) {
         this.name = name;
         this.openPrice = openPrice;
         this.highPrice = highPrice;

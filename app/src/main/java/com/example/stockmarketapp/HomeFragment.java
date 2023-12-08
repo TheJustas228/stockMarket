@@ -1,4 +1,5 @@
 package com.example.stockmarketapp;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,14 +9,20 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import java.util.ArrayList;
-import android.widget.TextView;
-import com.example.stockmarketapp.models.Stock;
 import com.example.stockmarketapp.adapters.StockAdapter;
+import com.example.stockmarketapp.models.Stock;
+import com.example.stockmarketapp.models.StockResponse;
+import com.google.gson.Gson;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Callback;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import android.widget.TextView;
 
-
-public class HomeFragment extends Fragment implements StockAdapter.OnClickListener {
+public class HomeFragment extends Fragment {
 
     private RecyclerView trackedStocksRecyclerView;
     private TextView emptyView;
@@ -30,30 +37,80 @@ public class HomeFragment extends Fragment implements StockAdapter.OnClickListen
         trackedStocksRecyclerView = view.findViewById(R.id.trackedStocksRecyclerView);
         emptyView = view.findViewById(R.id.emptyView);
 
-        // Initialize the list and adapter
         trackedStocks = new ArrayList<>();
-        stockAdapter = new StockAdapter(trackedStocks, this);
+        stockAdapter = new StockAdapter(trackedStocks, stock -> {
+            // Handle stock click here
+        });
         trackedStocksRecyclerView.setAdapter(stockAdapter);
         trackedStocksRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
         fetchTrackedStocks();
+
         return view;
     }
 
     private void fetchTrackedStocks() {
-        // TODO: Fetch the list of tracked stocks (from a database, API, or mock data for now)
+        // Top 10 stocks from the S&P 500 list (example symbols)
+        String[] stockSymbols = {"AAPL", "MSFT", "AMZN", "FB", "GOOGL", "JNJ", "V", "PG", "JPM", "UNH"};
 
-        // For now, let's add some mock data with volume
-        trackedStocks.add(new Stock("AAPL", 150.00, 152.50, 149.00, 151.00, 5000000L)); // Fix here
-        trackedStocks.add(new Stock("GOOGL", 2800.00, 2820.00, 2780.00, 2805.00, 3000000L)); // Fix here
-
-        // Update the RecyclerView
-        stockAdapter.notifyDataSetChanged();
-
-        // Show/hide the empty view based on the list size
-        emptyView.setVisibility(trackedStocks.isEmpty() ? View.VISIBLE : View.GONE);
+        for (String symbol : stockSymbols) {
+            fetchStockData(symbol);
+        }
     }
-    @Override
-    public void onStockClicked(Stock stock) {
-        // Implement what happens when a stock is clicked
+
+    private void fetchStockData(String symbol) {
+        OkHttpClient client = new OkHttpClient();
+        String url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" + symbol + "&apikey=YOUR_API_KEY";
+        Request request = new Request.Builder().url(url).build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(okhttp3.Call call, IOException e) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        emptyView.setText("Error fetching stock data from server.");
+                        emptyView.setVisibility(View.VISIBLE);
+                    });
+                }
+            }
+
+            @Override
+            public void onResponse(okhttp3.Call call, okhttp3.Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected code " + response);
+                } else {
+                    String jsonResponse = response.body() != null ? response.body().string() : null;
+                    Gson gson = new Gson();
+                    StockResponse stockResponse = gson.fromJson(jsonResponse, StockResponse.class);
+
+                    if (stockResponse != null && stockResponse.getTimeSeries() != null) {
+                        Map<String, StockResponse.DailyData> dailyDataMap = stockResponse.getTimeSeries();
+
+                        if (dailyDataMap != null && !dailyDataMap.isEmpty()) {
+                            processStockData(symbol, dailyDataMap);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private void processStockData(String symbol, Map<String, StockResponse.DailyData> dailyDataMap) {
+        StockResponse.DailyData latestData = dailyDataMap.values().iterator().next();
+        double openPrice = Double.parseDouble(latestData.getOpen());
+        double highPrice = Double.parseDouble(latestData.getHigh());
+        double lowPrice = Double.parseDouble(latestData.getLow());
+        double closePrice = Double.parseDouble(latestData.getClose());
+        double change = closePrice - openPrice; // Calculate the change
+        long volume = Long.parseLong(latestData.getVolume().replaceAll(",", ""));
+        Stock stock = new Stock(symbol, openPrice, highPrice, lowPrice, closePrice, change, volume);
+
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                trackedStocks.add(stock);
+                stockAdapter.notifyDataSetChanged();
+                emptyView.setVisibility(trackedStocks.isEmpty() ? View.VISIBLE : View.GONE);
+            });
+        }
     }
 }
