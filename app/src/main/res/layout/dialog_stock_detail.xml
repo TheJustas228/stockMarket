@@ -9,6 +9,39 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- TextView for Symbol -->
+        <TextView
+            android:id="@+id/tvSymbol"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Symbol"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <!-- TextView for Price -->
+        <TextView
+            android:id="@+id/tvPrice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Price"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <!-- TextView for Change -->
+        <TextView
+            android:id="@+id/tvChange"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Change"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <!-- TextView for Change Percent -->
+        <TextView
+            android:id="@+id/tvChangePercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Change (%)"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <!-- Existing TextViews for Date, Open Price, High Price, Low Price, Close Price, Volume -->
         <TextView
             android:id="@+id/tvDate"
             android:layout_width="wrap_content"

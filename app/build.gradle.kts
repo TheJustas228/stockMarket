@@ -15,7 +15,6 @@ android {
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
-        buildConfigField("String", "ALPHA_VANTAGE_API_KEY", "\"${project.property("AlphaVantageApiKey")}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -35,8 +34,8 @@ android {
 }
 
 dependencies {
-
-    implementation("androidx.recyclerview:recyclerview:1.3.1")
+    implementation("com.yahoofinance-api:YahooFinanceAPI:3.17.0")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("com.google.android.material:material:1.10.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.10.0")
@@ -46,5 +45,5 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
-    implementation("com.squareup.okhttp3:okhttp:4.9.3")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
 }

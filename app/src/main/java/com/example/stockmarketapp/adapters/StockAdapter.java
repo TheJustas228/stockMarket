@@ -7,19 +7,19 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.stockmarketapp.R;
-import com.example.stockmarketapp.models.Stock;
+import com.example.stockmarketapp.models.StockModel;
 import java.util.List;
 
 public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHolder> {
 
-    private Stock stock;
+    private StockModel stock;
     private OnClickListener onClickListener;
-    private List<Stock> stocks;
+    private List<StockModel> stocks;
 
     public interface OnClickListener {
-        void onStockClicked(Stock stock);
+        void onStockClicked(StockModel stock);
     }
-    public StockAdapter(List<Stock> stocks, OnClickListener onClickListener) {
+    public StockAdapter(List<StockModel> stocks, OnClickListener onClickListener) {
         this.stocks = stocks;
         this.onClickListener = onClickListener;
     }
@@ -33,8 +33,9 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
 
     @Override
     public void onBindViewHolder(@NonNull StockViewHolder holder, int position) {
-        Stock stock = stocks.get(position);
-        holder.stockName.setText(stock.getName());
+        StockModel stock = stocks.get(position);
+        // Update these lines to match the new Stock model
+        holder.stockName.setText(stock.getSymbol());  // Update the method getName() as per the new model
         holder.stockPrice.setText(String.format("Close Price: $%.2f", stock.getClosePrice()));
         holder.stockChange.setText(String.format("Change: $%.2f", stock.getChange()));
         holder.itemView.setOnClickListener(v -> onClickListener.onStockClicked(stock));
