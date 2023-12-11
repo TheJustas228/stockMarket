@@ -23,14 +23,52 @@ public class StockResponse {
     public static class Result {
         @SerializedName("underlyingSymbol")
         private String underlyingSymbol;
-        // Add other fields as per your requirement
+
+        @SerializedName("quote")
+        private Quote quote;
 
         public String getUnderlyingSymbol() {
             return underlyingSymbol;
         }
 
-        // Getter methods for other fields
+        public Quote getQuote() {
+            return quote;
+        }
     }
 
-    // If there are more nested structures in the JSON, you can add more static classes here
+    public static class Quote {
+        @SerializedName("symbol")
+        private String symbol;
+
+        @SerializedName("regularMarketPrice")
+        private double regularMarketPrice;
+
+        @SerializedName("regularMarketChange")
+        private double regularMarketChange;
+
+        @SerializedName("regularMarketChangePercent")
+        private double regularMarketChangePercent;
+
+        // Additional fields can be added here based on your requirements
+
+        public String getSymbol() {
+            return symbol;
+        }
+
+        public double getRegularMarketPrice() {
+            return regularMarketPrice;
+        }
+
+        public double getRegularMarketChange() {
+            return regularMarketChange;
+        }
+
+        public double getRegularMarketChangePercent() {
+            return regularMarketChangePercent;
+        }
+
+        // Getter methods for additional fields
+    }
+
+    // Additional nested classes can be added here if there are more structures in the JSON
 }

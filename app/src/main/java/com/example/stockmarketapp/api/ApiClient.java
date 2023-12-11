@@ -6,7 +6,6 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
-    // Updated Base URL for Yahoo Finance API
     private static final String BASE_URL = "https://query1.finance.yahoo.com/v7/finance/options/";
     private static Retrofit retrofit = null;
 

@@ -55,23 +55,24 @@ public class StockMarketFragment extends Fragment implements StockAdapter.OnClic
     }
 
     private void fetchStockData(String symbol) {
-        new Thread(() -> {
-            try {
-                Stock yahooStock = YahooFinance.get(symbol);
-                if (yahooStock != null) {
-                    StockModel stockModel = new StockModel(yahooStock);
-                    synchronized (stockMarketStocks) {
-                        stockMarketStocks.add(stockModel);
-                    }
+        Call<StockResponse> call = yahooFinanceService.getStockData(symbol);
+        call.enqueue(new Callback<StockResponse>() {
+            @Override
+            public void onResponse(Call<StockResponse> call, Response<StockResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    // Process the response
+                    StockResponse stockResponse = response.body();
+                    // TODO: Convert the response to your StockModel or appropriate data model
+                } else {
+                    Log.e("StockMarketFragment", "Response not successful for symbol: " + symbol);
                 }
-                // Update UI on the main thread
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> stockAdapter.notifyDataSetChanged());
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-        }).start();
+
+            @Override
+            public void onFailure(Call<StockResponse> call, Throwable t) {
+                Log.e("StockMarketFragment", "Error fetching stock data for " + symbol, t);
+            }
+        });
     }
 
     @Override
