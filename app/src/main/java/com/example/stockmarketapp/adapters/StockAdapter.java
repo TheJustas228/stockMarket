@@ -9,6 +9,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.stockmarketapp.R;
 import com.example.stockmarketapp.models.StockModel;
 import java.util.List;
+import android.content.res.Resources;
+import android.graphics.Color;
+import androidx.core.content.ContextCompat;
+import com.example.stockmarketapp.R;
 
 public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHolder> {
 
@@ -34,12 +38,15 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
     @Override
     public void onBindViewHolder(@NonNull StockViewHolder holder, int position) {
         StockModel stock = stocks.get(position);
-        // Update these lines to match the new Stock model
-        holder.stockName.setText(stock.getSymbol());  // Update the method getName() as per the new model
+        holder.stockName.setText(stock.getSymbol());
         holder.stockPrice.setText(String.format("Close Price: $%.2f", stock.getClosePrice()));
-        holder.stockChange.setText(String.format("Change: $%.2f", stock.getChange()));
+        double change = stock.getChange();
+        holder.stockChange.setText(String.format("Change: $%.2f", change));
+        holder.stockChange.setTextColor(change >= 0 ? Color.GREEN : Color.RED);
+
         holder.itemView.setOnClickListener(v -> onClickListener.onStockClicked(stock));
     }
+
 
     @Override
     public int getItemCount() {

@@ -55,14 +55,24 @@ public class StockMarketFragment extends Fragment implements StockAdapter.OnClic
     }
 
     private void fetchStockData(String symbol) {
-        Call<StockResponse> call = yahooFinanceService.getStockData(symbol);
+        Call<StockResponse> call = yahooFinanceService.getStockOptions(symbol);
         call.enqueue(new Callback<StockResponse>() {
             @Override
             public void onResponse(Call<StockResponse> call, Response<StockResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // Process the response
                     StockResponse stockResponse = response.body();
-                    // TODO: Convert the response to your StockModel or appropriate data model
+                    StockResponse.Quote quote = stockResponse.getOptionChain().getResult().get(0).getQuote();
+
+                    // Creating StockModel from the response
+                    StockModel stock = new StockModel();
+                    stock.setSymbol(quote.getSymbol());
+                    stock.setClosePrice(quote.getRegularMarketPrice());
+                    stock.setChange(quote.getRegularMarketChange());
+
+                    // TODO: Set other properties of StockModel as required
+
+                    stockMarketStocks.add(stock);
+                    stockAdapter.notifyDataSetChanged(); // Notify adapter about data change
                 } else {
                     Log.e("StockMarketFragment", "Response not successful for symbol: " + symbol);
                 }
@@ -75,12 +85,13 @@ public class StockMarketFragment extends Fragment implements StockAdapter.OnClic
         });
     }
 
+
+
     @Override
     public void onStockClicked(StockModel stock) {
-        // Navigate to StockDetailFragment with the selected stock
-        StockDetailFragment stockDetailFragment = StockDetailFragment.newInstance(stock);
+        StockGraphFragment stockGraphFragment = StockGraphFragment.newInstance(stock);
         getActivity().getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, stockDetailFragment)
+                .replace(R.id.fragment_container, stockGraphFragment)
                 .addToBackStack(null)
                 .commit();
     }
