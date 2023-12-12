@@ -48,7 +48,7 @@ public class StockMarketFragment extends Fragment implements StockAdapter.OnClic
     }
 
     private void fetchStockMarketStocks() {
-        String[] stockSymbols = {"AAPL", "MSFT", "AMZN", "TSLA", "GOOGL", "GOOG", "JNJ", "UNH", "NVDA"};
+        String[] stockSymbols = {"aapl", "msft", "amzn", "tsla", "googl", "goog", "jnj", "unh", "nvda"};
         for (String symbol : stockSymbols) {
             fetchStockData(symbol);
         }
