@@ -22,14 +22,6 @@
         android:gravity="center">
 
         <Button
-            android:id="@+id/btnOneHour"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="1h"
-            android:layout_margin="4dp"/>
-
-        <Button
             android:id="@+id/btnOneDay"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -76,5 +68,53 @@
         android:layout_height="wrap_content"
         android:text="Latest Price"
         android:textSize="16sp" />
+    <!-- Additional TextViews for displaying other stock information -->
+    <TextView
+        android:id="@+id/tvPreviousClose"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Previous Close"
+        android:textSize="16sp" />
 
+    <TextView
+        android:id="@+id/tvMarketCap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Market Cap"
+        android:textSize="16sp" />
+    <!-- Additional TextViews for new stock information -->
+    <TextView
+        android:id="@+id/tvDividendDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Dividend Date"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/tvDividendYield"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Dividend Yield"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/tvBid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bid"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/tvAsk"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ask"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/tvRegularMarketOpen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Market Open"
+        android:textSize="16sp" />
 </LinearLayout>

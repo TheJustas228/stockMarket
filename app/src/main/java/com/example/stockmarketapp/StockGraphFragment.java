@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.LinearLayout;
 
 import androidx.fragment.app.Fragment;
 
@@ -25,12 +26,9 @@ import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.MPPointF;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -86,27 +84,116 @@ public class StockGraphFragment extends Fragment {
         tvStockSymbol.setText("Current Stock: " + stock.getSymbol());
 
         TextView tvStockPrice = view.findViewById(R.id.tvStockPrice);
-        tvStockPrice.setText("Latest Price: " + stock.getClosePrice());
+        tvStockPrice.setText("Latest Price: " + stock.getClosePrice() + "$");
 
+        // Set up buttons and fetch default data (now using 1h interval)
         setupButtonListeners(view);
-        fetchStockData(stock.getSymbol(), "1h", "1d"); // Default data fetch
+        fetchStockData(stock.getSymbol(), "1h", "1d");
+        fetchAdditionalStockInfo(view, stock.getSymbol()); // Fixed this line
+
         return view;
     }
+    private void fetchAdditionalStockInfo(View view, String symbol) {
+        executorService.execute(() -> {
+            String urlString = "https://query1.finance.yahoo.com/v7/finance/options/" + symbol;
+            HttpsURLConnection urlConnection = null;
 
-    private void setupButtonListeners(View view) {
-        view.findViewById(R.id.btnOneHour).setOnClickListener(v -> {
-            currentInterval = "1h";
-            fetchStockData(stock.getSymbol(), "5m", "1h");
+            try {
+                URL url = new URL(urlString);
+                urlConnection = (HttpsURLConnection) url.openConnection();
+                urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
+                    StringBuilder result = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        result.append(line);
+                    }
+
+                    JSONObject jsonObject = new JSONObject(result.toString());
+                    JSONObject quote = jsonObject.getJSONObject("optionChain")
+                            .getJSONArray("result")
+                            .getJSONObject(0)
+                            .getJSONObject("quote");
+
+                    // Extract the needed information
+                    final String marketCap = quote.getString("marketCap");
+                    final String previousClose = quote.getString("regularMarketPreviousClose");
+
+                    // Convert dividend date from Unix timestamp to readable date format
+                    String dividendDateValue = quote.optString("dividendDate");
+                    final String formattedDividendDate;
+                    if (dividendDateValue != null && !dividendDateValue.isEmpty()) {
+                        long dividendTimestamp = Long.parseLong(dividendDateValue);
+                        Date dividendDate = new Date(dividendTimestamp * 1000); // Convert to milliseconds
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH);
+                        formattedDividendDate = dateFormat.format(dividendDate);
+                    } else {
+                        formattedDividendDate = "N/A";
+                    }
+
+                    // Extract other values and handle N/A cases similarly
+                    final String dividendYield = !quote.isNull("dividendYield") ? quote.getString("dividendYield") + "%" : "N/A";
+                    final String bid = !quote.isNull("bid") ? quote.getString("bid") + "$" : "N/A";
+                    final String ask = !quote.isNull("ask") ? quote.getString("ask") + "$" : "N/A";
+                    final String regularMarketOpen = !quote.isNull("regularMarketOpen") ? quote.getString("regularMarketOpen") + "$" : "N/A";
+
+                    // Update the UI on the main thread
+                    handler.post(() -> {
+                        TextView tvRegularMarketOpen = view.findViewById(R.id.tvRegularMarketOpen);
+                        tvRegularMarketOpen.setText("Market Open: " + regularMarketOpen);
+
+                        TextView tvPreviousClose = view.findViewById(R.id.tvPreviousClose);
+                        tvPreviousClose.setText("Previous Close: " + previousClose + "$");
+
+                        TextView tvMarketCap = view.findViewById(R.id.tvMarketCap);
+                        tvMarketCap.setText("Market Cap: " + marketCap + "$");
+
+                        TextView tvDividendDate = view.findViewById(R.id.tvDividendDate);
+                        tvDividendDate.setText("Previous Dividend Date: " + formattedDividendDate);
+
+                        TextView tvDividendYield = view.findViewById(R.id.tvDividendYield);
+                        tvDividendYield.setText("Dividend Yield: " + dividendYield);
+
+                        TextView tvBid = view.findViewById(R.id.tvBid);
+                        tvBid.setText("Bid: " + bid);
+
+                        TextView tvAsk = view.findViewById(R.id.tvAsk);
+                        tvAsk.setText("Ask: " + ask);
+
+
+                    });
+
+                }
+            } catch (Exception e) {
+                Log.e("StockGraphFragment", "Error: " + e.getMessage(), e);
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+            }
         });
+    }
+    private void setupButtonListeners(View view) {
+        // Removed the listener for the 1h button
+
+        // Adjust other button listeners as needed
         view.findViewById(R.id.btnOneDay).setOnClickListener(v -> {
             currentInterval = "1d";
             fetchStockData(stock.getSymbol(), "1h", "1d");
         });
-        view.findViewById(R.id.btnOneHour).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "5m", "1h"));
-        view.findViewById(R.id.btnOneDay).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1h", "1d"));
-        view.findViewById(R.id.btnOneWeek).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1d", "1wk"));
-        view.findViewById(R.id.btnOneMonth).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1d", "1mo"));
-        view.findViewById(R.id.btnThreeMonths).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1wk", "3mo"));
+        view.findViewById(R.id.btnOneWeek).setOnClickListener(v -> {
+            currentInterval = "1wk";
+            fetchStockData(stock.getSymbol(), "1d", "1wk");
+        });
+        view.findViewById(R.id.btnOneMonth).setOnClickListener(v -> {
+            currentInterval = "1mo";
+            fetchStockData(stock.getSymbol(), "1d", "1mo");
+        });
+        view.findViewById(R.id.btnThreeMonths).setOnClickListener(v -> {
+            currentInterval = "3mo";
+            fetchStockData(stock.getSymbol(), "1wk", "3mo");
+        });
     }
 
     private void fetchStockData(String symbol, String interval, String range) {
@@ -119,7 +206,8 @@ public class StockGraphFragment extends Fragment {
             try {
                 URL url = new URL(urlString);
                 urlConnection = (HttpsURLConnection) url.openConnection();
-                urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0");
+                urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0");
+
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
                     StringBuilder result = new StringBuilder();
                     String line;
@@ -127,46 +215,43 @@ public class StockGraphFragment extends Fragment {
                         result.append(line);
                     }
 
-                    JSONObject jsonObject = new JSONObject(result.toString());
-                    JSONObject chartObject = jsonObject.getJSONObject("chart");
-                    JSONArray resultArray = chartObject.getJSONArray("result");
-                    JSONObject firstResult = resultArray.getJSONObject(0);
-                    JSONObject indicators = firstResult.getJSONObject("indicators");
-                    JSONObject quoteObject = indicators.getJSONArray("quote").getJSONObject(0);
-                    JSONArray closeArray = quoteObject.getJSONArray("close");
-                    JSONArray timestampArray = firstResult.getJSONArray("timestamp");
+                    // Log the entire JSON response
+                    Log.d("StockGraphFragment", "JSON Response: " + result.toString());
 
-                    for (int i = 0; i < closeArray.length(); i++) {
-                        if (!closeArray.isNull(i)) {
-                            float closeValue = (float) closeArray.getDouble(i);
-                            long timestamp = timestampArray.getLong(i) * 1000; // Convert timestamp to milliseconds
-                            entries.add(new Entry(timestamp, closeValue));
+                    JSONObject jsonObject = new JSONObject(result.toString());
+                    if (jsonObject.has("chart")) {
+                        JSONObject chartObject = jsonObject.getJSONObject("chart");
+                        JSONArray resultArray = chartObject.getJSONArray("result");
+                        JSONObject firstResult = resultArray.getJSONObject(0);
+                        JSONObject indicators = firstResult.getJSONObject("indicators");
+
+                        if (indicators.has("quote")) {
+                            JSONObject quoteObject = indicators.getJSONArray("quote").getJSONObject(0);
+
+                            if (quoteObject.has("close")) {
+                                JSONArray closeArray = quoteObject.getJSONArray("close");
+                                JSONArray timestampArray = firstResult.getJSONArray("timestamp");
+
+                                for (int i = 0; i < closeArray.length(); i++) {
+                                    if (!closeArray.isNull(i)) {
+                                        float closeValue = (float) closeArray.getDouble(i);
+                                        long timestamp = timestampArray.getLong(i) * 1000;
+                                        entries.add(new Entry(timestamp, closeValue));
+                                    }
+                                }
+                            } else {
+                                Log.e("StockGraphFragment", "Close data not available for this interval");
+                            }
                         }
                     }
                 }
-            } catch (FileNotFoundException e) {
-                Log.e("StockGraphFragment", "URL not found: " + urlString, e);
-                if (urlConnection != null) {
-                    try {
-                        int responseCode = urlConnection.getResponseCode();
-                        String responseMessage = urlConnection.getResponseMessage();
-                        Log.e("StockGraphFragment", "HTTP Error: " + responseCode + " - " + responseMessage);
-                    } catch (IOException ex) {
-                        Log.e("StockGraphFragment", "Error getting response code", ex);
-                    }
-                }
-            } catch (IOException e) {
-                Log.e("StockGraphFragment", "Error reading from URL: " + urlString, e);
-            } catch (JSONException e) {
-                Log.e("StockGraphFragment", "Error parsing JSON response", e);
             } catch (Exception e) {
-                Log.e("StockGraphFragment", "Unexpected error", e);
+                Log.e("StockGraphFragment", "Error: " + e.getMessage(), e);
+            } finally {
+                handler.post(() -> updateChart(entries));
             }
-
-            handler.post(() -> updateChart(entries));
         });
     }
-
     private void updateChart(List<Entry> entries) {
         LineDataSet dataSet = new LineDataSet(entries, "Stock Data");
 
