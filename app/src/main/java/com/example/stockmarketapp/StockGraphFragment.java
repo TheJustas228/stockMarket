@@ -27,9 +27,17 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import com.example.stockmarketapp.models.StockModel;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.formatter.ValueFormatter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+
 
 public class StockGraphFragment extends Fragment {
 
@@ -71,21 +79,24 @@ public class StockGraphFragment extends Fragment {
     }
 
     private void setupButtonListeners(View view) {
-        view.findViewById(R.id.btnOneHour).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1m", "1h"));
-        view.findViewById(R.id.btnOneDay).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "5m", "1d"));
-        view.findViewById(R.id.btnOneWeek).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1h", "1wk"));
-        view.findViewById(R.id.btnOneMonth).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "90m", "1mo"));
-        view.findViewById(R.id.btnThreeMonths).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1d", "3mo"));
+        view.findViewById(R.id.btnOneHour).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "5m", "1h"));
+        view.findViewById(R.id.btnOneDay).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1h", "1d"));
+        view.findViewById(R.id.btnOneWeek).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "90m", "1wk"));
+        view.findViewById(R.id.btnOneMonth).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1d", "1mo"));
+        view.findViewById(R.id.btnThreeMonths).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1wk", "3mo"));
     }
 
     private void fetchStockData(String symbol, String interval, String range) {
-        String urlString = "https://query1.finance.yahoo.com/v7/finance/options/" + symbol + "?interval=" + interval + "&range=" + range;
+        String urlString = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?interval=" + interval + "&range=" + range;
 
         executorService.execute(() -> {
             List<Entry> entries = new ArrayList<>();
+            HttpsURLConnection urlConnection = null;
+
             try {
                 URL url = new URL(urlString);
-                HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+                urlConnection = (HttpsURLConnection) url.openConnection();
+                urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0");
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
                     StringBuilder result = new StringBuilder();
                     String line;
@@ -112,29 +123,54 @@ public class StockGraphFragment extends Fragment {
                 }
             } catch (FileNotFoundException e) {
                 Log.e("StockGraphFragment", "URL not found: " + urlString, e);
-                // Handle the FileNotFoundException
+                if (urlConnection != null) {
+                    try {
+                        int responseCode = urlConnection.getResponseCode();
+                        String responseMessage = urlConnection.getResponseMessage();
+                        Log.e("StockGraphFragment", "HTTP Error: " + responseCode + " - " + responseMessage);
+                    } catch (IOException ex) {
+                        Log.e("StockGraphFragment", "Error getting response code", ex);
+                    }
+                }
             } catch (IOException e) {
                 Log.e("StockGraphFragment", "Error reading from URL: " + urlString, e);
-                // Handle IOException
             } catch (JSONException e) {
                 Log.e("StockGraphFragment", "Error parsing JSON response", e);
-                // Handle JSONException
             } catch (Exception e) {
                 Log.e("StockGraphFragment", "Unexpected error", e);
-                // Handle other unexpected exceptions
             }
+
             handler.post(() -> updateChart(entries));
         });
     }
-
 
     private void updateChart(List<Entry> entries) {
         LineDataSet dataSet = new LineDataSet(entries, "Stock Data");
         dataSet.setColor(Color.BLUE);
         dataSet.setValueTextColor(Color.BLACK);
         LineData lineData = new LineData(dataSet);
+
+        XAxis xAxis = chart.getXAxis();
+        xAxis.setValueFormatter(new DateAxisValueFormatter());
+
         chart.setData(lineData);
         chart.invalidate();
+    }
+
+    // Custom formatter to convert timestamp to date
+    public class DateAxisValueFormatter extends ValueFormatter {
+        private final SimpleDateFormat mFormat;
+
+        public DateAxisValueFormatter() {
+            // Specify the format you need
+            this.mFormat = new SimpleDateFormat("dd MMM", Locale.ENGLISH);
+        }
+
+        @Override
+        public String getAxisLabel(float value, AxisBase axis) {
+            // Convert timestamp to milliseconds and format it
+            return mFormat.format(new Date((long) value));
+        }
     }
 
     @Override
