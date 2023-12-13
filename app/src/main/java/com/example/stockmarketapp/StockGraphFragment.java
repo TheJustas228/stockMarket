@@ -1,52 +1,59 @@
 package com.example.stockmarketapp;
 
+import android.content.Context;
 import android.os.Bundle;
-import androidx.fragment.app.Fragment;
-
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.os.Handler;
-import android.os.Looper;
-import android.graphics.Color;
+import android.widget.TextView;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONArray;
+import androidx.fragment.app.Fragment;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import javax.net.ssl.HttpsURLConnection;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import com.example.stockmarketapp.models.StockModel;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.AxisBase;
+import com.github.mikephil.charting.components.MarkerView;
+import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.utils.MPPointF;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import javax.net.ssl.HttpsURLConnection;
 
 
 
 public class StockGraphFragment extends Fragment {
 
+
     private static final String ARG_STOCK = "stock";
-    private StockModel stock; // Field to hold the stock model
+    private StockModel stock;
     private LineChart chart;
     private ExecutorService executorService;
     private Handler handler;
-
+    private String currentInterval = "1h";
     public StockGraphFragment() {
         // Required empty public constructor
     }
@@ -73,15 +80,31 @@ public class StockGraphFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_stock_graph, container, false);
         chart = view.findViewById(R.id.chart);
+
+        // Set the stock symbol at the top
+        TextView tvStockSymbol = view.findViewById(R.id.tvStockSymbol);
+        tvStockSymbol.setText("Current Stock: " + stock.getSymbol());
+
+        TextView tvStockPrice = view.findViewById(R.id.tvStockPrice);
+        tvStockPrice.setText("Latest Price: " + stock.getClosePrice());
+
         setupButtonListeners(view);
-        fetchStockData(stock.getSymbol(), "5m", "1d"); // Set default interval and range
+        fetchStockData(stock.getSymbol(), "1h", "1d"); // Default data fetch
         return view;
     }
 
     private void setupButtonListeners(View view) {
+        view.findViewById(R.id.btnOneHour).setOnClickListener(v -> {
+            currentInterval = "1h";
+            fetchStockData(stock.getSymbol(), "5m", "1h");
+        });
+        view.findViewById(R.id.btnOneDay).setOnClickListener(v -> {
+            currentInterval = "1d";
+            fetchStockData(stock.getSymbol(), "1h", "1d");
+        });
         view.findViewById(R.id.btnOneHour).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "5m", "1h"));
         view.findViewById(R.id.btnOneDay).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1h", "1d"));
-        view.findViewById(R.id.btnOneWeek).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "90m", "1wk"));
+        view.findViewById(R.id.btnOneWeek).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1d", "1wk"));
         view.findViewById(R.id.btnOneMonth).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1d", "1mo"));
         view.findViewById(R.id.btnThreeMonths).setOnClickListener(v -> fetchStockData(stock.getSymbol(), "1wk", "3mo"));
     }
@@ -146,15 +169,60 @@ public class StockGraphFragment extends Fragment {
 
     private void updateChart(List<Entry> entries) {
         LineDataSet dataSet = new LineDataSet(entries, "Stock Data");
-        dataSet.setColor(Color.BLUE);
-        dataSet.setValueTextColor(Color.BLACK);
+
+        // Disable drawing values on data points
+        dataSet.setDrawValues(false);
+
         LineData lineData = new LineData(dataSet);
+        chart.setData(lineData);
 
         XAxis xAxis = chart.getXAxis();
         xAxis.setValueFormatter(new DateAxisValueFormatter());
+        // Custom MarkerView to show price and date on tap
+        CustomMarkerView mv = new CustomMarkerView(getContext(), R.layout.marker_view);
+        chart.setMarker(mv);
 
-        chart.setData(lineData);
         chart.invalidate();
+    }
+
+    // Custom MarkerView class
+    public class CustomMarkerView extends MarkerView {
+        private TextView tvContent;
+        private SimpleDateFormat dateFormat;
+
+        public CustomMarkerView(Context context, int layoutResource) {
+            super(context, layoutResource);
+            tvContent = findViewById(R.id.tvContent);
+            updateDateFormat();
+        }
+
+        private void updateDateFormat() {
+            switch (currentInterval) {
+                case "1h":
+                    dateFormat = new SimpleDateFormat("dd MMM HH:mm", Locale.ENGLISH);
+                    break;
+                case "1d":
+                    dateFormat = new SimpleDateFormat("dd MMM HH:00", Locale.ENGLISH);
+                    break;
+                default: // For 1wk, 1mo, and 3mo
+                    dateFormat = new SimpleDateFormat("dd MMM", Locale.ENGLISH);
+                    break;
+            }
+        }
+
+        @Override
+        public void refreshContent(Entry e, Highlight highlight) {
+            updateDateFormat();
+            String date = dateFormat.format(new Date((long) e.getX()));
+            String text = "Price: " + e.getY() + "\nDate: " + date;
+            tvContent.setText(text);
+            super.refreshContent(e, highlight);
+        }
+
+        @Override
+        public MPPointF getOffset() {
+            return new MPPointF(-(getWidth() / 2), -getHeight());
+        }
     }
 
     // Custom formatter to convert timestamp to date

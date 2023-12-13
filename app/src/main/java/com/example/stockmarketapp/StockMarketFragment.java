@@ -86,8 +86,6 @@ public class StockMarketFragment extends Fragment implements StockAdapter.OnClic
         });
     }
 
-
-
     @Override
     public void onStockClicked(StockModel stock) {
         StockGraphFragment stockGraphFragment = StockGraphFragment.newInstance(stock);
