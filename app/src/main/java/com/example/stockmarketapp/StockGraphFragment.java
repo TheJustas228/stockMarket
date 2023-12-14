@@ -8,10 +8,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
-import android.widget.LinearLayout;
 
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.stockmarketapp.models.StockModel;
 import com.github.mikephil.charting.charts.LineChart;
@@ -26,6 +27,7 @@ import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.MPPointF;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -52,8 +54,12 @@ public class StockGraphFragment extends Fragment {
     private ExecutorService executorService;
     private Handler handler;
     private String currentInterval = "1h";
+    private SharedViewModel viewModel;
     public StockGraphFragment() {
         // Required empty public constructor
+    }
+
+    public void setOnStockTrackedListener(OnStockTrackedListener listener) {
     }
 
     public static StockGraphFragment newInstance(StockModel stock) {
@@ -72,6 +78,8 @@ public class StockGraphFragment extends Fragment {
         }
         executorService = Executors.newSingleThreadExecutor();
         handler = new Handler(Looper.getMainLooper());
+
+        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
     }
 
     @Override
@@ -91,8 +99,20 @@ public class StockGraphFragment extends Fragment {
         fetchStockData(stock.getSymbol(), "1h", "1d");
         fetchAdditionalStockInfo(view, stock.getSymbol()); // Fixed this line
 
+        Button trackStockButton = view.findViewById(R.id.btnTrackStock);
+        trackStockButton.setOnClickListener(v -> trackStock(stock));
+
         return view;
     }
+
+    private void trackStock(StockModel stock) {
+        viewModel.addStock(stock);
+    }
+
+    public interface OnStockTrackedListener {
+        void onStockTracked(StockModel stock);
+    }
+
     private void fetchAdditionalStockInfo(View view, String symbol) {
         executorService.execute(() -> {
             String urlString = "https://query1.finance.yahoo.com/v7/finance/options/" + symbol;
@@ -200,7 +220,6 @@ public class StockGraphFragment extends Fragment {
         String urlString = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?interval=" + interval + "&range=" + range;
 
         executorService.execute(() -> {
-            List<Entry> entries = new ArrayList<>();
             HttpsURLConnection urlConnection = null;
 
             try {
@@ -208,49 +227,57 @@ public class StockGraphFragment extends Fragment {
                 urlConnection = (HttpsURLConnection) url.openConnection();
                 urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0");
 
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
-                    StringBuilder result = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        result.append(line);
-                    }
+                BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                StringBuilder result = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    result.append(line);
+                }
+                reader.close();
 
-                    // Log the entire JSON response
-                    Log.d("StockGraphFragment", "JSON Response: " + result.toString());
+                // Process the JSON response
+                JSONObject jsonObject = new JSONObject(result.toString());
+                List<Entry> entries = parseChartData(jsonObject);
+                handler.post(() -> updateChart(entries));
 
-                    JSONObject jsonObject = new JSONObject(result.toString());
-                    if (jsonObject.has("chart")) {
-                        JSONObject chartObject = jsonObject.getJSONObject("chart");
-                        JSONArray resultArray = chartObject.getJSONArray("result");
-                        JSONObject firstResult = resultArray.getJSONObject(0);
-                        JSONObject indicators = firstResult.getJSONObject("indicators");
+            } catch (Exception e) {
+                Log.e("StockGraphFragment", "Error fetching stock data: " + e.getMessage(), e);
+                handler.post(() -> {
+                    // Handle UI updates or error messages here
+                });
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+            }
+        });
+    }
 
-                        if (indicators.has("quote")) {
-                            JSONObject quoteObject = indicators.getJSONArray("quote").getJSONObject(0);
+    private List<Entry> parseChartData(JSONObject jsonObject) throws JSONException {
+        List<Entry> entries = new ArrayList<>();
+        if (jsonObject.has("chart")) {
+            JSONObject chartObject = jsonObject.getJSONObject("chart");
+            JSONArray resultArray = chartObject.getJSONArray("result");
+            JSONObject firstResult = resultArray.getJSONObject(0);
+            JSONObject indicators = firstResult.getJSONObject("indicators");
 
-                            if (quoteObject.has("close")) {
-                                JSONArray closeArray = quoteObject.getJSONArray("close");
-                                JSONArray timestampArray = firstResult.getJSONArray("timestamp");
+            if (indicators.has("quote")) {
+                JSONObject quoteObject = indicators.getJSONArray("quote").getJSONObject(0);
+                if (quoteObject.has("close")) {
+                    JSONArray closeArray = quoteObject.getJSONArray("close");
+                    JSONArray timestampArray = firstResult.getJSONArray("timestamp");
 
-                                for (int i = 0; i < closeArray.length(); i++) {
-                                    if (!closeArray.isNull(i)) {
-                                        float closeValue = (float) closeArray.getDouble(i);
-                                        long timestamp = timestampArray.getLong(i) * 1000;
-                                        entries.add(new Entry(timestamp, closeValue));
-                                    }
-                                }
-                            } else {
-                                Log.e("StockGraphFragment", "Close data not available for this interval");
-                            }
+                    for (int i = 0; i < closeArray.length(); i++) {
+                        if (!closeArray.isNull(i)) {
+                            float closeValue = (float) closeArray.getDouble(i);
+                            long timestamp = timestampArray.getLong(i) * 1000; // Convert to milliseconds
+                            entries.add(new Entry(timestamp, closeValue));
                         }
                     }
                 }
-            } catch (Exception e) {
-                Log.e("StockGraphFragment", "Error: " + e.getMessage(), e);
-            } finally {
-                handler.post(() -> updateChart(entries));
             }
-        });
+        }
+        return entries;
     }
     private void updateChart(List<Entry> entries) {
         LineDataSet dataSet = new LineDataSet(entries, "Stock Data");

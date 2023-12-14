@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.stockmarketapp.adapters.StockAdapter;
@@ -25,6 +26,8 @@ public class HomeFragment extends Fragment {
     private List<StockModel> trackedStocks;
     private StockAdapter stockAdapter;
 
+    private SharedViewModel viewModel;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -40,16 +43,34 @@ public class HomeFragment extends Fragment {
         trackedStocksRecyclerView.setAdapter(stockAdapter);
         trackedStocksRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        fetchTrackedStocks();
+        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        viewModel.getTrackedStocks().observe(getViewLifecycleOwner(), updatedStocks -> {
+            trackedStocks.clear();
+            trackedStocks.addAll(updatedStocks);
+            stockAdapter.notifyDataSetChanged();
+            emptyView.setVisibility(trackedStocks.isEmpty() ? View.VISIBLE : View.GONE);
+        });
 
         return view;
     }
 
     private void fetchTrackedStocks() {
-        String[] stockSymbols = {"AAPL", "MSFT", "AMZN", "FB", "GOOGL", "JNJ", "V", "PG", "JPM", "UNH"};
-        for (String symbol : stockSymbols) {
-            fetchStockData(symbol);
+        List<StockModel> stocks = TrackedStocksManager.getInstance().getTrackedStocks();
+        trackedStocks.clear();
+        trackedStocks.addAll(stocks);
+        stockAdapter.notifyDataSetChanged();
+    }
+
+    public void addTrackedStock(StockModel stock) {
+        if (!trackedStocks.contains(stock)) {
+            trackedStocks.add(stock);
+            stockAdapter.notifyDataSetChanged();
+            saveTrackedStocks(); // Save to persistent storage
         }
+    }
+
+    private void saveTrackedStocks() {
+        // Implement logic to save tracked stocks (e.g., using SharedPreferences)
     }
 
     private void fetchStockData(String symbol) {

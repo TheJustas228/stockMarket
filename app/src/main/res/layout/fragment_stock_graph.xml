@@ -14,6 +14,13 @@
         android:textSize="18sp"
         android:textStyle="bold" />
 
+    <Button
+        android:id="@+id/btnTrackStock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Track Stock"
+        android:layout_marginTop="8dp"/>
+
     <!-- Button layout for time intervals -->
     <LinearLayout
         android:layout_width="match_parent"
