@@ -1,39 +1,44 @@
 package com.example.stockmarketapp;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
-
 import com.example.stockmarketapp.models.StockModel;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class SharedViewModel extends ViewModel {
-    private final MutableLiveData<List<StockModel>> trackedStocks = new MutableLiveData<>(new ArrayList<>());
+    private MutableLiveData<List<StockModel>> trackedStocks = new MutableLiveData<>(new ArrayList<>());
 
     public LiveData<List<StockModel>> getTrackedStocks() {
         return trackedStocks;
     }
 
-    public void addStock(StockModel stock) {
+    public void setTrackedStocks(List<StockModel> stockList) {
+        trackedStocks.setValue(stockList);
+    }
+
+    public void trackStock(StockModel stock) {
         List<StockModel> currentStocks = trackedStocks.getValue();
         if (currentStocks == null) {
             currentStocks = new ArrayList<>();
         }
-
-        boolean stockExists = false;
-        for (StockModel existingStock : currentStocks) {
-            if (existingStock.getSymbol().equalsIgnoreCase(stock.getSymbol())) {
-                stockExists = true;
-                break;
-            }
-        }
-
-        if (!stockExists) {
+        if (!currentStocks.contains(stock)) {
             currentStocks.add(stock);
-            trackedStocks.postValue(currentStocks);
+            trackedStocks.setValue(currentStocks); // Immediate update
+            Log.d("SharedViewModel", "Stock added: " + stock.getSymbol());
+        } else {
+            Log.d("SharedViewModel", "Stock already tracked: " + stock.getSymbol());
         }
     }
 
+    public void removeStock(StockModel stock) {
+        List<StockModel> currentStocks = new ArrayList<>(trackedStocks.getValue());
+        if (currentStocks.contains(stock)) {
+            currentStocks.remove(stock);
+            trackedStocks.postValue(currentStocks);
+        }
+    }
 }

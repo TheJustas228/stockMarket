@@ -54,12 +54,12 @@ public class StockGraphFragment extends Fragment {
     private ExecutorService executorService;
     private Handler handler;
     private String currentInterval = "1h";
+
     private SharedViewModel viewModel;
+    private StockModel currentStock; // The stock that this fragment is displaying
+
     public StockGraphFragment() {
         // Required empty public constructor
-    }
-
-    public void setOnStockTrackedListener(OnStockTrackedListener listener) {
     }
 
     public static StockGraphFragment newInstance(StockModel stock) {
@@ -76,20 +76,19 @@ public class StockGraphFragment extends Fragment {
         if (getArguments() != null) {
             stock = (StockModel) getArguments().getSerializable(ARG_STOCK);
         }
-        executorService = Executors.newSingleThreadExecutor();
-        handler = new Handler(Looper.getMainLooper());
-
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        executorService = Executors.newSingleThreadExecutor(); // Initialize the ExecutorService here
+        handler = new Handler(Looper.getMainLooper());
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_stock_graph, container, false);
         chart = view.findViewById(R.id.chart);
-
+        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         // Set the stock symbol at the top
         TextView tvStockSymbol = view.findViewById(R.id.tvStockSymbol);
-        tvStockSymbol.setText("Current Stock: " + stock.getSymbol());
+        tvStockSymbol.setText(stock.getSymbol());
 
         TextView tvStockPrice = view.findViewById(R.id.tvStockPrice);
         tvStockPrice.setText("Latest Price: " + stock.getClosePrice() + "$");
@@ -100,13 +99,15 @@ public class StockGraphFragment extends Fragment {
         fetchAdditionalStockInfo(view, stock.getSymbol()); // Fixed this line
 
         Button trackStockButton = view.findViewById(R.id.btnTrackStock);
-        trackStockButton.setOnClickListener(v -> trackStock(stock));
+        trackStockButton.setOnClickListener(v -> trackStock(stock)); // Pass 'stock' as an argument
 
         return view;
     }
 
     private void trackStock(StockModel stock) {
-        viewModel.addStock(stock);
+        if (stock != null) {
+            viewModel.trackStock(stock);
+        }
     }
 
     public interface OnStockTrackedListener {
@@ -160,30 +161,30 @@ public class StockGraphFragment extends Fragment {
 
                     // Update the UI on the main thread
                     handler.post(() -> {
-                        TextView tvRegularMarketOpen = view.findViewById(R.id.tvRegularMarketOpen);
-                        tvRegularMarketOpen.setText("Market Open: " + regularMarketOpen);
+                        if(isAdded()) {
+                            TextView tvRegularMarketOpen = view.findViewById(R.id.tvRegularMarketOpen);
+                            tvRegularMarketOpen.setText("Market Open: " + regularMarketOpen);
 
-                        TextView tvPreviousClose = view.findViewById(R.id.tvPreviousClose);
-                        tvPreviousClose.setText("Previous Close: " + previousClose + "$");
+                            TextView tvPreviousClose = view.findViewById(R.id.tvPreviousClose);
+                            tvPreviousClose.setText("Previous Close: " + previousClose + "$");
 
-                        TextView tvMarketCap = view.findViewById(R.id.tvMarketCap);
-                        tvMarketCap.setText("Market Cap: " + marketCap + "$");
+                            TextView tvMarketCap = view.findViewById(R.id.tvMarketCap);
+                            tvMarketCap.setText("Market Cap: " + marketCap + "$");
 
-                        TextView tvDividendDate = view.findViewById(R.id.tvDividendDate);
-                        tvDividendDate.setText("Previous Dividend Date: " + formattedDividendDate);
+                            TextView tvDividendDate = view.findViewById(R.id.tvDividendDate);
+                            tvDividendDate.setText("Previous Dividend Date: " + formattedDividendDate);
 
-                        TextView tvDividendYield = view.findViewById(R.id.tvDividendYield);
-                        tvDividendYield.setText("Dividend Yield: " + dividendYield);
+                            TextView tvDividendYield = view.findViewById(R.id.tvDividendYield);
+                            tvDividendYield.setText("Dividend Yield: " + dividendYield);
 
-                        TextView tvBid = view.findViewById(R.id.tvBid);
-                        tvBid.setText("Bid: " + bid);
+                            TextView tvBid = view.findViewById(R.id.tvBid);
+                            tvBid.setText("Bid: " + bid);
 
-                        TextView tvAsk = view.findViewById(R.id.tvAsk);
-                        tvAsk.setText("Ask: " + ask);
+                            TextView tvAsk = view.findViewById(R.id.tvAsk);
+                            tvAsk.setText("Ask: " + ask);
 
-
+                        }
                     });
-
                 }
             } catch (Exception e) {
                 Log.e("StockGraphFragment", "Error: " + e.getMessage(), e);
@@ -195,8 +196,6 @@ public class StockGraphFragment extends Fragment {
         });
     }
     private void setupButtonListeners(View view) {
-        // Removed the listener for the 1h button
-
         // Adjust other button listeners as needed
         view.findViewById(R.id.btnOneDay).setOnClickListener(v -> {
             currentInterval = "1d";
@@ -357,7 +356,7 @@ public class StockGraphFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown();
+            executorService.shutdown(); // Shutdown the ExecutorService when the Fragment is destroyed
         }
     }
 }

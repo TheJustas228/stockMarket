@@ -26,4 +26,12 @@
         android:text="+0.00%"
         android:textAppearance="?attr/textAppearanceListItem" />
 
+
+    <Button
+        android:id="@+id/removeButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Remove"
+        android:visibility="gone" />
+
 </LinearLayout>

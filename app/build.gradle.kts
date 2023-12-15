@@ -34,6 +34,7 @@ android {
 }
 
 dependencies {
+    implementation("com.google.code.gson:gson:2.8.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel:2.2.0")
     implementation("androidx.lifecycle:lifecycle-livedata:2.2.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")

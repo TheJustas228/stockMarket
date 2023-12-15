@@ -13,6 +13,7 @@ public class StockModel implements Serializable {
     private double change;
     private double changePercent;
     private long volume;
+    private double latestPrice;
 
     // No-argument constructor
     public StockModel() {
@@ -41,6 +42,7 @@ public class StockModel implements Serializable {
     public double getClosePrice() { return closePrice; }
     public double getChange() { return change; }
     public double getChangePercent() { return changePercent; }
+    public double getLatestPrice() { return latestPrice; }
     public long getVolume() { return volume; }
 
     public void setSymbol(String symbol) { this.symbol = symbol; }
@@ -50,5 +52,6 @@ public class StockModel implements Serializable {
     public void setClosePrice(double closePrice) { this.closePrice = closePrice; }
     public void setChange(double change) { this.change = change; }
     public void setChangePercent(double changePercent) { this.changePercent = changePercent; }
+    public void setLatestPrice(double latestPrice) { this.latestPrice = latestPrice; }
     public void setVolume(long volume) { this.volume = volume; }
 }

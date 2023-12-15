@@ -1,6 +1,7 @@
 package com.example.stockmarketapp;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,17 +15,13 @@ import com.example.stockmarketapp.api.ApiClient;
 import com.example.stockmarketapp.api.YahooFinanceService;
 import com.example.stockmarketapp.models.StockModel;
 import com.example.stockmarketapp.models.StockResponse;
-import java.io.IOException;
-import yahoofinance.Stock;
-import yahoofinance.YahooFinance;
-import android.util.Log;
+import java.util.ArrayList;
+import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import java.util.ArrayList;
-import java.util.List;
 
-public class StockMarketFragment extends Fragment implements StockAdapter.OnClickListener {
+public class StockMarketFragment extends Fragment {
 
     private RecyclerView stockMarketRecyclerView;
     private List<StockModel> stockMarketStocks;
@@ -37,14 +34,30 @@ public class StockMarketFragment extends Fragment implements StockAdapter.OnClic
         View view = inflater.inflate(R.layout.fragment_stock_market, container, false);
         stockMarketRecyclerView = view.findViewById(R.id.stockMarketRecyclerView);
         stockMarketStocks = new ArrayList<>();
-        stockAdapter = new StockAdapter(stockMarketStocks, this);
+
+        // Updated constructor call to match the StockAdapter definition
+        stockAdapter = new StockAdapter(
+                stockMarketStocks,
+                this::onStockSelected,
+                stock -> {
+                    // Empty implementation for remove functionality
+                }
+        );
+
         stockMarketRecyclerView.setAdapter(stockAdapter);
         stockMarketRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
         yahooFinanceService = ApiClient.getClient().create(YahooFinanceService.class);
         fetchStockMarketStocks();
 
         return view;
+    }
+
+    private void onStockSelected(StockModel stock) {
+        StockGraphFragment stockGraphFragment = StockGraphFragment.newInstance(stock);
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, stockGraphFragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     private void fetchStockMarketStocks() {
@@ -62,17 +75,12 @@ public class StockMarketFragment extends Fragment implements StockAdapter.OnClic
                 if (response.isSuccessful() && response.body() != null) {
                     StockResponse stockResponse = response.body();
                     StockResponse.Quote quote = stockResponse.getOptionChain().getResult().get(0).getQuote();
-
-                    // Creating StockModel from the response
                     StockModel stock = new StockModel();
                     stock.setSymbol(quote.getSymbol());
                     stock.setClosePrice(quote.getRegularMarketPrice());
                     stock.setChange(quote.getRegularMarketChange());
-
-                    // TODO: Set other properties of StockModel as required
-
                     stockMarketStocks.add(stock);
-                    stockAdapter.notifyDataSetChanged(); // Notify adapter about data change
+                    stockAdapter.notifyDataSetChanged();
                 } else {
                     Log.e("StockMarketFragment", "Response not successful for symbol: " + symbol);
                 }
@@ -85,14 +93,6 @@ public class StockMarketFragment extends Fragment implements StockAdapter.OnClic
         });
     }
 
-
-
-    @Override
-    public void onStockClicked(StockModel stock) {
-        StockGraphFragment stockGraphFragment = StockGraphFragment.newInstance(stock);
-        getActivity().getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, stockGraphFragment)
-                .addToBackStack(null)
-                .commit();
-    }
+    // If you still want to handle stock clicks, define the method here
+    // and update your adapter to handle click events.
 }

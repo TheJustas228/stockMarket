@@ -1,9 +1,11 @@
 package com.example.stockmarketapp.adapters;
 
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,16 +18,32 @@ import java.util.List;
 
 public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHolder> {
 
-    private StockModel stock;
-    private OnClickListener onClickListener;
     private List<StockModel> stocks;
+    private boolean isRemoveModeActive = false;
+    private OnRemoveButtonClickListener onRemoveButtonClickListener;
+    private boolean isRemoveButtonVisible;
 
-    public interface OnClickListener {
-        void onStockClicked(StockModel stock);
+    private final OnItemClickListener onItemClickListener;
+
+    public interface OnItemClickListener {
+        void onItemClick(StockModel stock);
     }
-    public StockAdapter(List<StockModel> stocks, OnClickListener onClickListener) {
+
+    // Define an interface for click listener
+    public interface OnRemoveButtonClickListener {
+        void onRemoveButtonClicked(StockModel stock);
+    }
+
+    public StockAdapter(List<StockModel> stocks, OnItemClickListener onItemClickListener, OnRemoveButtonClickListener onRemoveButtonClickListener) {
         this.stocks = stocks;
-        this.onClickListener = onClickListener;
+        this.onItemClickListener = onItemClickListener;
+        this.onRemoveButtonClickListener = onRemoveButtonClickListener;
+    }
+
+    public void setRemoveMode(boolean active) {
+        isRemoveModeActive = active;
+        Log.d("StockAdapter", "Set remove mode: " + isRemoveModeActive);
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -40,13 +58,44 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
         StockModel stock = stocks.get(position);
         holder.stockName.setText(stock.getSymbol());
         holder.stockPrice.setText(String.format("Close Price: $%.2f", stock.getClosePrice()));
-        double change = stock.getChange();
-        holder.stockChange.setText(String.format("Change: $%.2f", change));
-        holder.stockChange.setTextColor(change >= 0 ? Color.GREEN : Color.RED);
+        holder.stockChange.setText(String.format("Change: $%.2f", stock.getChange()));
+        holder.stockChange.setTextColor(stock.getChange() >= 0 ? Color.GREEN : Color.RED);
 
-        holder.itemView.setOnClickListener(v -> onClickListener.onStockClicked(stock));
+        holder.itemView.setOnClickListener(v -> {
+            Log.d("StockAdapter", "Item clicked. Remove mode: " + isRemoveModeActive);
+            if (isRemoveModeActive) {
+                if (onRemoveButtonClickListener != null) {
+                    Log.d("StockAdapter", "Removing item: " + stock.getSymbol());
+                    onRemoveButtonClickListener.onRemoveButtonClicked(stock);
+                    stocks.remove(position);
+                    notifyItemRemoved(position);
+                    notifyItemRangeChanged(position, stocks.size());
+                }
+            } else {
+                if (onItemClickListener != null) {
+                    Log.d("StockAdapter", "Regular item click: " + stock.getSymbol());
+                    onItemClickListener.onItemClick(stock);
+                }
+            }
+        });
+        if (holder.removeButton != null) {
+            if (isRemoveButtonVisible) {
+                holder.removeButton.setVisibility(View.VISIBLE);
+                holder.removeButton.setOnClickListener(v -> {
+                    onRemoveButtonClickListener.onRemoveButtonClicked(stock);
+                    stocks.remove(position);
+                    notifyItemRemoved(position);
+                    notifyItemRangeChanged(position, stocks.size());
+                });
+            } else {
+                holder.removeButton.setVisibility(View.GONE);
+            }
+        }
     }
 
+    public void setStocks(List<StockModel> stocks) {
+        this.stocks = stocks;
+    }
 
     @Override
     public int getItemCount() {
@@ -55,12 +104,14 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
 
     static class StockViewHolder extends RecyclerView.ViewHolder {
         TextView stockName, stockPrice, stockChange;
+        Button removeButton;
 
         StockViewHolder(@NonNull View itemView) {
             super(itemView);
             stockName = itemView.findViewById(R.id.stockName);
             stockPrice = itemView.findViewById(R.id.stockPrice);
             stockChange = itemView.findViewById(R.id.stockChange);
+            removeButton = itemView.findViewById(R.id.removeButton);
         }
     }
 }
