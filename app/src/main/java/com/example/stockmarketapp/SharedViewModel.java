@@ -34,6 +34,18 @@ public class SharedViewModel extends ViewModel {
         }
     }
 
+    public boolean isStockTracked(String symbol) {
+        List<StockModel> currentStocks = trackedStocks.getValue();
+        if (currentStocks != null) {
+            for (StockModel stock : currentStocks) {
+                if (stock.getSymbol().equalsIgnoreCase(symbol)) {
+                    return true; // Stock is already tracked
+                }
+            }
+        }
+        return false; // Stock is not tracked
+    }
+
     public void removeStock(StockModel stock) {
         List<StockModel> currentStocks = new ArrayList<>(trackedStocks.getValue());
         if (currentStocks.contains(stock)) {
