@@ -106,7 +106,16 @@ public class StockGraphFragment extends Fragment {
 
     private void trackStock(StockModel stock) {
         if (stock != null) {
-            viewModel.trackStock(stock);
+            fetchAdditionalStockInfo(null, stock.getSymbol()); // Fetch additional stock info
+            DatabaseHelper db = new DatabaseHelper(getContext());
+
+            if (!viewModel.isStockTracked(stock.getSymbol())) {
+                db.addStock(stock.getSymbol());
+                Log.d("StockGraphFragment", "Stock tracked: " + stock.getSymbol());
+                viewModel.trackStock(stock); // Track the stock if it's not already tracked
+            } else {
+                Log.d("StockGraphFragment", "Stock already tracked: " + stock.getSymbol());
+            }
         }
     }
 
@@ -140,28 +149,39 @@ public class StockGraphFragment extends Fragment {
                     // Extract the needed information
                     final String marketCap = quote.getString("marketCap");
                     final String previousClose = quote.getString("regularMarketPreviousClose");
+                    double change = 0.0;
 
-                    // Convert dividend date from Unix timestamp to readable date format
-                    String dividendDateValue = quote.optString("dividendDate");
-                    final String formattedDividendDate;
-                    if (dividendDateValue != null && !dividendDateValue.isEmpty()) {
-                        long dividendTimestamp = Long.parseLong(dividendDateValue);
-                        Date dividendDate = new Date(dividendTimestamp * 1000); // Convert to milliseconds
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH);
-                        formattedDividendDate = dateFormat.format(dividendDate);
-                    } else {
-                        formattedDividendDate = "N/A";
+                    // Handle potential JSONException for 'change'
+                    try {
+                        change = quote.getDouble("regularMarketChange");
+                    } catch (JSONException e) {
+                        Log.e("StockGraphFragment", "Error parsing 'regularMarketChange': " + e.getMessage());
                     }
 
-                    // Extract other values and handle N/A cases similarly
+                    // Handle dividend date conversion
+                    final String formattedDividendDate;
+                    String formattedDividendDate1;
+                    try {
+                        long dividendDateTimestamp = quote.getLong("dividendDate");
+                        Date dividendDate = new Date(dividendDateTimestamp * 1000); // Convert to milliseconds
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH);
+                        formattedDividendDate1 = dateFormat.format(dividendDate);
+                    } catch (JSONException e) {
+                        formattedDividendDate1 = "N/A";
+                        Log.e("StockGraphFragment", "Error parsing 'dividendDate': " + e.getMessage());
+                    }
+
+                    // Extract other values
+                    formattedDividendDate = formattedDividendDate1;
                     final String dividendYield = !quote.isNull("dividendYield") ? quote.getString("dividendYield") + "%" : "N/A";
                     final String bid = !quote.isNull("bid") ? quote.getString("bid") + "$" : "N/A";
                     final String ask = !quote.isNull("ask") ? quote.getString("ask") + "$" : "N/A";
                     final String regularMarketOpen = !quote.isNull("regularMarketOpen") ? quote.getString("regularMarketOpen") + "$" : "N/A";
 
                     // Update the UI on the main thread
+                    double finalChange = change;
                     handler.post(() -> {
-                        if(isAdded()) {
+                        if(isAdded() && view != null) {
                             TextView tvRegularMarketOpen = view.findViewById(R.id.tvRegularMarketOpen);
                             tvRegularMarketOpen.setText("Market Open: " + regularMarketOpen);
 
@@ -183,11 +203,14 @@ public class StockGraphFragment extends Fragment {
                             TextView tvAsk = view.findViewById(R.id.tvAsk);
                             tvAsk.setText("Ask: " + ask);
 
+                            // Update the stock model with the fetched data
+                            stock.setClosePrice(Double.parseDouble(previousClose));
+                            stock.setChange(finalChange);
                         }
                     });
                 }
             } catch (Exception e) {
-                Log.e("StockGraphFragment", "Error: " + e.getMessage(), e);
+                Log.e("StockGraphFragment", "Error fetching stock info: " + e.getMessage(), e);
             } finally {
                 if (urlConnection != null) {
                     urlConnection.disconnect();
@@ -195,6 +218,7 @@ public class StockGraphFragment extends Fragment {
             }
         });
     }
+
     private void setupButtonListeners(View view) {
         // Adjust other button listeners as needed
         view.findViewById(R.id.btnOneDay).setOnClickListener(v -> {

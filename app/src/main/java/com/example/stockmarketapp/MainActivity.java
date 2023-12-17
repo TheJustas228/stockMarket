@@ -60,9 +60,9 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.nav_home) {
             selectedFragment = new HomeFragment();
         } else if (id == R.id.nav_stock_market) {
-            selectedFragment = new StockMarketFragment(); // Now this fragment is available
-        } else if (id == R.id.nav_friends) {
-            selectedFragment = new FriendsFragment();
+            selectedFragment = new StockMarketFragment();
+        } else if (id == R.id.nav_news) {
+                selectedFragment = new NewsFragment();
         } else if (id == R.id.nav_options) {
             selectedFragment = new OptionsFragment();
         }
