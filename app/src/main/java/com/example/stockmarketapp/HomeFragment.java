@@ -45,18 +45,18 @@ public class HomeFragment extends Fragment {
     private SharedViewModel viewModel;
     private ExecutorService executorService;
     private Handler handler;
+    private TextView stockLatestPriceView;
     private Handler priceUpdateHandler = new Handler(Looper.getMainLooper());
     private Runnable priceUpdateRunnable = new Runnable() {
         @Override
         public void run() {
             fetchLatestPrices();
-            priceUpdateHandler.postDelayed(this, 15000); // 30 seconds
+            priceUpdateHandler.postDelayed(this, 30000); // 30 seconds
         }
     };
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         handler = new Handler(Looper.getMainLooper());
         executorService = Executors.newSingleThreadExecutor();
         priceUpdateHandler = new Handler(Looper.getMainLooper());
@@ -64,7 +64,7 @@ public class HomeFragment extends Fragment {
             @Override
             public void run() {
                 fetchLatestPrices();
-                priceUpdateHandler.postDelayed(this, 15000); // Schedule next update after 30 seconds
+                priceUpdateHandler.postDelayed(this, 30000); // Schedule next update after 30 seconds
             }
         };
     }
@@ -85,7 +85,7 @@ public class HomeFragment extends Fragment {
         if (trackedStocks != null) {
             for (StockModel stock : trackedStocks) {
                 String symbol = stock.getSymbol();
-                fetchPriceForStock(symbol); // This method should also update close price and change
+                fetchPriceForStock(symbol);
             }
         }
     }
@@ -109,19 +109,16 @@ public class HomeFragment extends Fragment {
                 }
 
                 JSONObject jsonObject = new JSONObject(result.toString());
-                JSONObject quote = jsonObject.getJSONObject("optionChain")
+                double latestPrice = jsonObject.getJSONObject("optionChain")
                         .getJSONArray("result")
                         .getJSONObject(0)
-                        .getJSONObject("quote");
-
-                double latestPrice = quote.getDouble("regularMarketPrice");
-                double closePrice = quote.getDouble("regularMarketPreviousClose"); // Extract close price
-                double change = quote.getDouble("regularMarketChange"); // Extract change
-
+                        .getJSONObject("quote")
+                        .getDouble("regularMarketPrice");
                 Log.d("HomeFragment", "Fetched latest price for " + symbol + ": " + latestPrice);
 
                 handler.post(() -> {
-                    updateStockPrice(symbol, latestPrice, closePrice, change);
+                    // Find the stock in your list and update its latest price
+                    updateStockPrice(symbol, latestPrice);
                 });
 
             } catch (Exception e) {
@@ -134,47 +131,39 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void updateStockPrice(String symbol, double latestPrice, double closePrice, double change) {
+    private void updateStockPrice(String symbol, double latestPrice) {
         List<StockModel> stocks = viewModel.getTrackedStocks().getValue();
         if (stocks != null) {
             for (StockModel stock : stocks) {
                 if (stock.getSymbol().equals(symbol)) {
                     stock.setLatestPrice(latestPrice);
-                    stock.setLatestPrice(latestPrice);
-                    stock.setClosePrice(closePrice); // Set the close price
-                    stock.setChange(change); // Set the change
                     Log.d("HomeFragment", "Updated latest price for " + symbol + " to " + latestPrice);
+                    handler.post(() -> stockAdapter.notifyDataSetChanged());
+                    break;
                 }
             }
-            handler.post(() -> stockAdapter.notifyDataSetChanged());
         }
     }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_home, container, false);
         Log.d("HomeFragment", "onCreateView - Creating view");
+        View view = inflater.inflate(R.layout.fragment_home, container, false); // Inflate layout
+        stockLatestPriceView = view.findViewById(R.id.stockLatestPrice);
         // Initialize views
         trackedStocksRecyclerView = view.findViewById(R.id.trackedStocksRecyclerView);
         emptyView = view.findViewById(R.id.emptyView);
         removeButton = view.findViewById(R.id.removeButton);
-        DatabaseHelper db = new DatabaseHelper(getContext());
-        List<String> trackedStockSymbols = db.getAllStocks();
-
-        // Assuming you have a method to convert stock symbols to StockModel objects
-        List<StockModel> trackedStocks = convertSymbolsToStockModels(trackedStockSymbols);
-        viewModel.setTrackedStocks(trackedStocks); // Update the ViewModel with the stocks from the database
 
         // Initialize adapter with separate click listeners
-        stockAdapter = new StockAdapter(getContext(),
+        stockAdapter = new StockAdapter(
                 new ArrayList<>(),
                 stock -> {
                     // Regular click listener
                     // Log or handle regular click here
                     Log.d("HomeFragment", "Regular click: " + stock.getSymbol());
                 },
-                this::removeTrackedStock,
-                true
+                this::removeTrackedStock  // Remove click listener
         );
         trackedStocksRecyclerView.setAdapter(stockAdapter);
         trackedStocksRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -186,16 +175,6 @@ public class HomeFragment extends Fragment {
         removeButton.setOnClickListener(v -> toggleRemoveMode());
 
         return view;
-    }
-
-    private List<StockModel> convertSymbolsToStockModels(List<String> symbols) {
-        List<StockModel> stocks = new ArrayList<>();
-        for (String symbol : symbols) {
-            StockModel stock = new StockModel();
-            stock.setSymbol(symbol);
-            stocks.add(stock);
-        }
-        return stocks;
     }
 
     private void toggleRemoveMode() {
@@ -210,11 +189,10 @@ public class HomeFragment extends Fragment {
         stockAdapter.notifyDataSetChanged();
         emptyView.setVisibility(stocks.isEmpty() ? View.VISIBLE : View.GONE);
         removeButton.setVisibility(stocks.isEmpty() ? View.GONE : View.VISIBLE);
+        stockLatestPriceView.setVisibility(stocks.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void removeTrackedStock(StockModel stock) {
-        DatabaseHelper db = new DatabaseHelper(getContext());
-        db.deleteStock(stock.getSymbol());
         Log.d("HomeFragment", "Removing stock: " + stock.getSymbol());
         viewModel.removeStock(stock);
         saveTrackedStocks();

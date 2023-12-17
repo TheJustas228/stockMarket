@@ -13,6 +13,14 @@
         android:layout_centerHorizontal="true"
         android:visibility="gone" />
 
+    <TextView
+        android:id="@+id/stockLatestPrice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Latest Price: $0.00"
+        android:textAppearance="?attr/textAppearanceListItem"
+        android:layout_below="@+id/removeButton" />
+
     <!-- RecyclerView for displaying tracked stocks -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/trackedStocksRecyclerView"

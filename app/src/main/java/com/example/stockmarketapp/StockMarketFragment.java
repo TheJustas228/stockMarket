@@ -36,12 +36,12 @@ public class StockMarketFragment extends Fragment {
         stockMarketStocks = new ArrayList<>();
 
         // Updated constructor call to match the StockAdapter definition
-        stockAdapter = new StockAdapter(getContext(),
+        stockAdapter = new StockAdapter(
                 stockMarketStocks,
                 this::onStockSelected,
                 stock -> {
                     // Empty implementation for remove functionality
-                }, false
+                }
         );
 
         stockMarketRecyclerView.setAdapter(stockAdapter);
