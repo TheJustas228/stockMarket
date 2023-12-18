@@ -170,12 +170,9 @@ public class HomeFragment extends Fragment {
                 new ArrayList<>(),
                 stock -> {
                     // Regular click listener
-                    // Log or handle regular click here
                     Log.d("HomeFragment", "Regular click: " + stock.getSymbol());
                 },
-                this::removeTrackedStock,
-                true
-        );
+                this::removeTrackedStock);
         trackedStocksRecyclerView.setAdapter(stockAdapter);
         trackedStocksRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 

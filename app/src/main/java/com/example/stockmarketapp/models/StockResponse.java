@@ -49,6 +49,9 @@ public class StockResponse {
         @SerializedName("regularMarketChangePercent")
         private double regularMarketChangePercent;
 
+        @SerializedName("regularMarketPreviousClose")
+        private double regularMarketPreviousClose;
+
         // Additional fields can be added here based on your requirements
 
         public String getSymbol() {
@@ -66,6 +69,11 @@ public class StockResponse {
         public double getRegularMarketChangePercent() {
             return regularMarketChangePercent;
         }
+
+        public double getRegularMarketPreviousClose() {
+            return regularMarketPreviousClose;
+        }
+
 
         // Getter methods for additional fields
     }

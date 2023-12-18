@@ -15,20 +15,31 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StockMarketApp"
         tools:targetApi="31">
+
         <service
             android:name=".api.YahooFinanceService"
             android:enabled="true"
             android:exported="true"></service>
+
         <!-- Main Activity declaration -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
+        <!-- LoginActivity declaration -->
+        <activity android:name=".LoginActivity">
+            <!-- Add any intent filters if needed -->
+        </activity>
+
+        <!-- RegisterActivity declaration -->
+        <activity android:name=".RegisterActivity">
+            <!-- Add any intent filters if needed -->
+        </activity>
+
+    </application>
 </manifest>

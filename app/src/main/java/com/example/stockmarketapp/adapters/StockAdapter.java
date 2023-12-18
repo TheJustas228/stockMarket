@@ -45,12 +45,12 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
         void onRemoveButtonClicked(StockModel stock);
     }
 
-    public StockAdapter(Context context, List<StockModel> stocks, OnItemClickListener onItemClickListener, OnRemoveButtonClickListener onRemoveButtonClickListener, boolean showLatestPrice) {
+    public StockAdapter(Context context, List<StockModel> stocks, OnItemClickListener onItemClickListener, OnRemoveButtonClickListener onRemoveButtonClickListener) {
         this.context = context;
         this.stocks = stocks;
         this.onItemClickListener = onItemClickListener;
         this.onRemoveButtonClickListener = onRemoveButtonClickListener;
-        this.showLatestPrice = showLatestPrice;
+        this.showLatestPrice = true; // Always show the latest price
     }
 
     public void setRemoveMode(boolean active) {
