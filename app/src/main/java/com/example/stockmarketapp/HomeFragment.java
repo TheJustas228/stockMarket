@@ -50,7 +50,7 @@ public class HomeFragment extends Fragment {
         @Override
         public void run() {
             fetchLatestPrices();
-            priceUpdateHandler.postDelayed(this, 15000); // 30 seconds
+            priceUpdateHandler.postDelayed(this, 15000); // 15 seconds
         }
     };
     @Override
@@ -64,7 +64,7 @@ public class HomeFragment extends Fragment {
             @Override
             public void run() {
                 fetchLatestPrices();
-                priceUpdateHandler.postDelayed(this, 15000); // Schedule next update after 30 seconds
+                priceUpdateHandler.postDelayed(this, 15000); // Schedule next update after 15 seconds
             }
         };
     }
