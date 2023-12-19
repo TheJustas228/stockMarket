@@ -107,7 +107,7 @@ public class StockGraphFragment extends Fragment {
     private void trackStock(StockModel stock) {
         if (stock != null) {
             fetchAdditionalStockInfo(null, stock.getSymbol()); // Fetch additional stock info
-            DatabaseHelper db = new DatabaseHelper(getContext());
+            DatabaseHelper db = new DatabaseHelper();
 
             if (!viewModel.isStockTracked(stock.getSymbol())) {
                 db.addStock(stock.getSymbol());

@@ -27,7 +27,9 @@ public class SharedViewModel extends ViewModel {
         }
         if (!currentStocks.contains(stock)) {
             currentStocks.add(stock);
-            trackedStocks.setValue(currentStocks); // Immediate update
+            trackedStocks.setValue(currentStocks);
+            DatabaseHelper db = new DatabaseHelper();
+            db.addStock(stock.getSymbol());// Immediate update
             Log.d("SharedViewModel", "Stock added: " + stock.getSymbol());
         } else {
             Log.d("SharedViewModel", "Stock already tracked: " + stock.getSymbol());
@@ -51,6 +53,8 @@ public class SharedViewModel extends ViewModel {
         if (currentStocks.contains(stock)) {
             currentStocks.remove(stock);
             trackedStocks.postValue(currentStocks);
+            DatabaseHelper db = new DatabaseHelper();
+            db.deleteStock(stock.getSymbol());
         }
     }
 }

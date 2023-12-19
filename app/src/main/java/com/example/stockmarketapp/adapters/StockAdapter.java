@@ -34,11 +34,15 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
 
     public void onRemoveButtonClicked(StockModel stock) {
         if (stock != null) {
-            DatabaseHelper db = new DatabaseHelper(context);
+            DatabaseHelper db = new DatabaseHelper();
             db.deleteStock(stock.getSymbol());
             Log.d("StockAdapter", "Stock removed: " + stock.getSymbol());
             // Update the ViewModel and UI accordingly
         }
+    }
+
+    public boolean isRemoveModeActive() {
+        return this.isRemoveModeActive;
     }
 
     public interface OnRemoveButtonClickListener {

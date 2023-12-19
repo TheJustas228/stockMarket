@@ -15,12 +15,20 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.stockmarketapp.adapters.StockAdapter;
 import com.example.stockmarketapp.models.StockModel;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 
 import org.json.JSONObject;
@@ -45,6 +53,9 @@ public class HomeFragment extends Fragment {
     private SharedViewModel viewModel;
     private ExecutorService executorService;
     private Handler handler;
+    private DatabaseReference databaseReference;
+    private DatabaseHelper databaseHelper;
+    private String userId;
     private Handler priceUpdateHandler = new Handler(Looper.getMainLooper());
     private Runnable priceUpdateRunnable = new Runnable() {
         @Override
@@ -56,18 +67,30 @@ public class HomeFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         handler = new Handler(Looper.getMainLooper());
-        executorService = Executors.newSingleThreadExecutor();
-        priceUpdateHandler = new Handler(Looper.getMainLooper());
-        priceUpdateRunnable = new Runnable() {
-            @Override
-            public void run() {
-                fetchLatestPrices();
-                priceUpdateHandler.postDelayed(this, 15000); // Schedule next update after 15 seconds
-            }
-        };
+
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+
+        if (currentUser != null) {
+            userId = currentUser.getUid();
+            databaseReference = FirebaseDatabase.getInstance().getReference("userStocks").child(userId);
+            viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+
+            viewModel.getTrackedStocks().observe(this, stocks -> {
+                stockAdapter.setStocks(stocks);
+                stockAdapter.notifyDataSetChanged();
+                updateEmptyViewVisibility(stocks.isEmpty());
+            });
+
+            databaseHelper = new DatabaseHelper();
+            executorService = Executors.newSingleThreadExecutor();
+        } else {
+            Log.e("HomeFragment", "No user is logged in");
+            // Redirect to login activity or handle the user not being logged in
+        }
     }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -81,11 +104,14 @@ public class HomeFragment extends Fragment {
     }
 
     private void fetchLatestPrices() {
-        List<StockModel> trackedStocks = viewModel.getTrackedStocks().getValue();
-        if (trackedStocks != null) {
-            for (StockModel stock : trackedStocks) {
-                String symbol = stock.getSymbol();
-                fetchPriceForStock(symbol); // This method should also update close price and change
+        if (viewModel != null) {
+            LiveData<List<StockModel>> trackedStocksLiveData = viewModel.getTrackedStocks();
+            if (trackedStocksLiveData != null && trackedStocksLiveData.getValue() != null) {
+                for (StockModel stock : trackedStocksLiveData.getValue()) {
+                    String symbol = stock.getSymbol();
+                    fetchPriceForStock(symbol);
+                    Log.d("HomeFragment", "Fetching prices for stock: " + symbol);
+                }
             }
         }
     }
@@ -115,14 +141,17 @@ public class HomeFragment extends Fragment {
                         .getJSONObject("quote");
 
                 double latestPrice = quote.getDouble("regularMarketPrice");
-                double closePrice = quote.getDouble("regularMarketPreviousClose"); // Extract close price
-                double change = quote.getDouble("regularMarketChange"); // Extract change
+                double closePrice = quote.getDouble("regularMarketPreviousClose");
+                double change = quote.getDouble("regularMarketChange");
 
                 Log.d("HomeFragment", "Fetched latest price for " + symbol + ": " + latestPrice);
 
-                handler.post(() -> {
-                    updateStockPrice(symbol, latestPrice, closePrice, change);
-                });
+                // Ensure that handler is not null and the fragment is still added
+                if (handler != null && isAdded()) {
+                    handler.post(() -> {
+                        updateStockPrice(symbol, latestPrice, closePrice, change);
+                    });
+                }
 
             } catch (Exception e) {
                 Log.e("HomeFragment", "Error fetching stock price: " + e.getMessage(), e);
@@ -140,7 +169,6 @@ public class HomeFragment extends Fragment {
             for (StockModel stock : stocks) {
                 if (stock.getSymbol().equals(symbol)) {
                     stock.setLatestPrice(latestPrice);
-                    stock.setLatestPrice(latestPrice);
                     stock.setClosePrice(closePrice); // Set the close price
                     stock.setChange(change); // Set the change
                     Log.d("HomeFragment", "Updated latest price for " + symbol + " to " + latestPrice);
@@ -153,36 +181,59 @@ public class HomeFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
-        Log.d("HomeFragment", "onCreateView - Creating view");
-        // Initialize views
+
+        // Initialize RecyclerView and other views
         trackedStocksRecyclerView = view.findViewById(R.id.trackedStocksRecyclerView);
         emptyView = view.findViewById(R.id.emptyView);
         removeButton = view.findViewById(R.id.removeButton);
-        DatabaseHelper db = new DatabaseHelper(getContext());
-        List<String> trackedStockSymbols = db.getAllStocks();
+        databaseReference = databaseHelper.getUserStocksReference();
 
-        // Assuming you have a method to convert stock symbols to StockModel objects
-        List<StockModel> trackedStocks = convertSymbolsToStockModels(trackedStockSymbols);
-        viewModel.setTrackedStocks(trackedStocks); // Update the ViewModel with the stocks from the database
-
-        // Initialize adapter with separate click listeners
-        stockAdapter = new StockAdapter(getContext(),
-                new ArrayList<>(),
-                stock -> {
-                    // Regular click listener
-                    Log.d("HomeFragment", "Regular click: " + stock.getSymbol());
-                },
-                this::removeTrackedStock);
+        // Initialize adapter with empty list
+        stockAdapter = new StockAdapter(getContext(), new ArrayList<>(), this::onStockClicked, this::removeTrackedStock);
         trackedStocksRecyclerView.setAdapter(stockAdapter);
         trackedStocksRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Get ViewModel
-        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-        viewModel.getTrackedStocks().observe(getViewLifecycleOwner(), this::updateTrackedStocks);
+        // Fetch tracked stocks
+        fetchTrackedStocks();
 
+        // Set up the remove mode toggle
         removeButton.setOnClickListener(v -> toggleRemoveMode());
 
         return view;
+    }
+
+    private void fetchTrackedStocks() {
+        if (userId != null) {
+            databaseReference.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    List<StockModel> stocks = new ArrayList<>();
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        String symbol = snapshot.getKey();
+                        if (symbol != null) {
+                            StockModel stock = new StockModel();
+                            stock.setSymbol(symbol);
+                            stocks.add(stock);
+                        }
+                    }
+                    viewModel.setTrackedStocks(stocks);
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.e("HomeFragment", "Failed to read value.", databaseError.toException());
+                }
+            });
+        }
+    }
+
+    private void onStockClicked(StockModel stock) {
+        // Implement what happens when a stock is clicked
+    }
+
+    private void updateEmptyViewVisibility(boolean isEmpty) {
+        emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        removeButton.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
 
     private List<StockModel> convertSymbolsToStockModels(List<String> symbols) {
@@ -196,10 +247,9 @@ public class HomeFragment extends Fragment {
     }
 
     private void toggleRemoveMode() {
-        isRemoveModeActive = !isRemoveModeActive;
-        Log.d("HomeFragment", "Remove mode toggled. Current state: " + isRemoveModeActive);
-        stockAdapter.setRemoveMode(isRemoveModeActive);
-        removeButton.setText(isRemoveModeActive ? "Cancel Remove" : "Remove");
+        boolean isRemoveModeActive = stockAdapter.isRemoveModeActive();
+        stockAdapter.setRemoveMode(!isRemoveModeActive);
+        removeButton.setText(getString(isRemoveModeActive ? R.string.remove : R.string.cancel_remove));
     }
 
     private void updateTrackedStocks(List<StockModel> stocks) {
@@ -210,11 +260,9 @@ public class HomeFragment extends Fragment {
     }
 
     private void removeTrackedStock(StockModel stock) {
-        DatabaseHelper db = new DatabaseHelper(getContext());
-        db.deleteStock(stock.getSymbol());
-        Log.d("HomeFragment", "Removing stock: " + stock.getSymbol());
-        viewModel.removeStock(stock);
-        saveTrackedStocks();
+        databaseReference.child(stock.getSymbol()).removeValue()
+                .addOnSuccessListener(aVoid -> Log.d("HomeFragment", "Stock removed: " + stock.getSymbol()))
+                .addOnFailureListener(e -> Log.e("HomeFragment", "Failed to remove stock: " + stock.getSymbol(), e));
     }
 
     private void saveTrackedStocks() {

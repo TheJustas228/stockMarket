@@ -36,7 +36,6 @@ public class LoginActivity extends AppCompatActivity {
         String email = usernameEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
 
-        // Input validation
         if (TextUtils.isEmpty(email)) {
             Toast.makeText(getApplicationContext(), "Please enter email...", Toast.LENGTH_LONG).show();
             return;
@@ -46,18 +45,13 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Authenticate the user
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Sign in success, navigate to main activity
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                        startActivity(intent);
+                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();
                     } else {
-                        // If sign in fails, display a message to the user.
-                        Toast.makeText(LoginActivity.this, "Authentication failed: " + task.getException().getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Authentication failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }

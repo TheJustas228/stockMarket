@@ -33,10 +33,7 @@ public class RegisterActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-        findViewById(R.id.backToLoginButton).setOnClickListener(view -> {
-            finish(); // Simply finish the activity to return to the previous screen
-        });
-
+        findViewById(R.id.backToLoginButton).setOnClickListener(view -> finish());
     }
 
     @Override
@@ -52,7 +49,6 @@ public class RegisterActivity extends AppCompatActivity {
         String email = newEmailEditText.getText().toString().trim();
         String password = newPasswordEditText.getText().toString().trim();
 
-        // Input validation
         if (TextUtils.isEmpty(email)) {
             Toast.makeText(getApplicationContext(), "Please enter email...", Toast.LENGTH_LONG).show();
             return;
@@ -62,19 +58,14 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        // More comprehensive checks can be added here (e.g., password length, format)
-
-        // Register the user in Firebase
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        Toast.makeText(RegisterActivity.this, "User registered successfully", Toast.LENGTH_SHORT).show();
-                        // Redirect to login activity
+                        Toast.makeText(RegisterActivity.this, "Registration successful", Toast.LENGTH_SHORT).show();
                         startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
                         finish();
                     } else {
-                        // If sign in fails, display a message to the user.
-                        Toast.makeText(RegisterActivity.this, "Authentication failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(RegisterActivity.this, "Registration failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
