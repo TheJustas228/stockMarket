@@ -70,9 +70,10 @@ public class MainActivity extends AppCompatActivity {
         } else if (id == R.id.nav_stock_market) {
             selectedFragment = new StockMarketFragment();
         } else if (id == R.id.nav_news) {
-                selectedFragment = new NewsFragment();
-        } else if (id == R.id.nav_options) {
-            selectedFragment = new OptionsFragment();
+            selectedFragment = new NewsFragment();
+        } else if (id == R.id.nav_logout) {
+            logoutUser();
+            return true; // Return early since there's no fragment change for logout
         }
 
         if (selectedFragment != null) {
@@ -84,5 +85,11 @@ public class MainActivity extends AppCompatActivity {
 
         drawerLayout.closeDrawers();
         return true;
+    }
+
+    private void logoutUser() {
+        FirebaseAuth.getInstance().signOut();
+        startActivity(new Intent(this, LoginActivity.class));
+        finish();
     }
 }

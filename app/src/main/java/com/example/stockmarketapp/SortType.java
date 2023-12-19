@@ -7,5 +7,4 @@ public enum SortType {
     CHANGE_DESCENDING,
     CLOSE_PRICE_ASCENDING,
     CLOSE_PRICE_DESCENDING
-    // Additional sorting options...
 }
