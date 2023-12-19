@@ -3,22 +3,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
-<EditText
-android:id="@+id/newEmailEditText"
-android:layout_width="match_parent"
-android:layout_height="wrap_content"
-android:hint="Email" />
+        <EditText
+        android:id="@+id/newEmailEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Email" />
 
-<EditText
-android:id="@+id/newPasswordEditText"
-android:layout_width="match_parent"
-android:layout_height="wrap_content"
-android:hint="Password"
-android:inputType="textPassword" />
+        <EditText
+        android:id="@+id/newPasswordEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Password"
+        android:inputType="textPassword" />
 
-<Button
-android:id="@+id/registerButton"
-android:layout_width="wrap_content"
-android:layout_height="wrap_content"
-android:text="Create Account" />
-    </LinearLayout>
+        <Button
+        android:id="@+id/registerButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Create Account" />
+
+        <Button
+            android:id="@+id/backToLoginButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Back to Login" />
+</LinearLayout>

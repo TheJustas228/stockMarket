@@ -93,9 +93,7 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
             if (isRemoveModeActive) {
                 if (onRemoveButtonClickListener != null) {
                     onRemoveButtonClickListener.onRemoveButtonClicked(stock);
-                    stocks.remove(position);
-                    notifyItemRemoved(position);
-                    notifyItemRangeChanged(position, stocks.size());
+                    removeItem(position);
                 }
             } else {
                 if (onItemClickListener != null) {
@@ -108,15 +106,23 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
             holder.removeButton.setVisibility(isRemoveButtonVisible ? View.VISIBLE : View.GONE);
             holder.removeButton.setOnClickListener(v -> {
                 onRemoveButtonClickListener.onRemoveButtonClicked(stock);
-                stocks.remove(position);
-                notifyItemRemoved(position);
-                notifyItemRangeChanged(position, stocks.size());
+                removeItem(position);
             });
         }
     }
 
     public void setStocks(List<StockModel> stocks) {
         this.stocks = stocks;
+    }
+
+    private void removeItem(int position) {
+        if (position >= 0 && position < stocks.size()) {
+            stocks.remove(position);
+            notifyItemRemoved(position);
+            notifyItemRangeChanged(position, stocks.size());
+        } else {
+            Log.e("StockAdapter", "Attempted to remove item at invalid position: " + position);
+        }
     }
 
     @Override
