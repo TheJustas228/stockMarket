@@ -21,13 +21,11 @@ import retrofit2.Response;
 import com.example.stockmarketapp.adapters.NewsAdapter;
 import com.example.stockmarketapp.models.NewsResponse;
 import com.example.stockmarketapp.models.StockModel;
-import com.google.firebase.database.DatabaseReference;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class NewsFragment extends Fragment {
     private RecyclerView newsRecyclerView;

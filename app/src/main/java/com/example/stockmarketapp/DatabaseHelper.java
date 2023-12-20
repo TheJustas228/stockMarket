@@ -1,5 +1,7 @@
 package com.example.stockmarketapp;
 
+import android.util.Log;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -9,26 +11,40 @@ import java.util.List;
 
 public class DatabaseHelper {
     private DatabaseReference databaseReference;
-    private static final String USERS_NODE = "users";
-    private static final String STOCKS_NODE = "stocks";
 
     public DatabaseHelper() {
-        // Initialize Firebase Database reference
-        this.databaseReference = FirebaseDatabase.getInstance().getReference(USERS_NODE);
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        if (mAuth.getCurrentUser() != null) {
+            String userId = mAuth.getCurrentUser().getUid();
+            // Set the database URL explicitly
+            FirebaseDatabase database = FirebaseDatabase.getInstance("https://stock-market-app-c39d9-default-rtdb.europe-west1.firebasedatabase.app/");
+            databaseReference = database.getReference("userStocks").child(userId);
+        } else {
+            throw new IllegalStateException("User must be logged in to use DatabaseHelper");
+        }
     }
 
-    public DatabaseReference getUserStocksReference() {
-        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        return databaseReference.child(userId).child(STOCKS_NODE);
+    public DatabaseReference getDatabaseReference() {
+        return databaseReference;
     }
+
     public void addStock(String symbol) {
-        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        databaseReference.child("userStocks").child(userId).child(symbol).setValue(true);
+        if (databaseReference != null) {
+            databaseReference.child(symbol).setValue(true)
+                    .addOnSuccessListener(aVoid -> Log.d("DatabaseHelper", "Stock successfully added: " + symbol))
+                    .addOnFailureListener(e -> Log.e("DatabaseHelper", "Error adding stock: " + symbol, e));
+        } else {
+            Log.e("DatabaseHelper", "DatabaseReference is null");
+        }
     }
 
     public void deleteStock(String symbol) {
-        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        databaseReference.child("userStocks").child(userId).child(symbol).removeValue();
+        if (databaseReference != null) {
+            Log.d("DatabaseHelper", "Deleting stock: " + symbol);
+            databaseReference.child(symbol).removeValue();
+        } else {
+            Log.e("DatabaseHelper", "DatabaseReference is null");
+        }
     }
 
     public List<String> getAllStocks() {

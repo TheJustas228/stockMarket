@@ -186,7 +186,10 @@ public class HomeFragment extends Fragment {
         trackedStocksRecyclerView = view.findViewById(R.id.trackedStocksRecyclerView);
         emptyView = view.findViewById(R.id.emptyView);
         removeButton = view.findViewById(R.id.removeButton);
-        databaseReference = databaseHelper.getUserStocksReference();
+
+        // Use the DatabaseHelper to get the database reference
+        databaseHelper = new DatabaseHelper();
+        databaseReference = databaseHelper.getDatabaseReference(); // Corrected line
 
         // Initialize adapter with empty list
         stockAdapter = new StockAdapter(getContext(), new ArrayList<>(), this::onStockClicked, this::removeTrackedStock);
@@ -202,9 +205,13 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
+
     private void fetchTrackedStocks() {
-        if (userId != null) {
-            databaseReference.addValueEventListener(new ValueEventListener() {
+        DatabaseHelper databaseHelper = new DatabaseHelper();
+        DatabaseReference userStocksReference = databaseHelper.getDatabaseReference();
+
+        if (userStocksReference != null) {
+            userStocksReference.addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     List<StockModel> stocks = new ArrayList<>();
@@ -226,6 +233,7 @@ public class HomeFragment extends Fragment {
             });
         }
     }
+
 
     private void onStockClicked(StockModel stock) {
         // Implement what happens when a stock is clicked
