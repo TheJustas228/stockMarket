@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SharedViewModel extends ViewModel {
-    private MutableLiveData<List<StockModel>> trackedStocks = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<List<StockModel>> trackedStocks = new MutableLiveData<>(new ArrayList<>());
 
     public LiveData<List<StockModel>> getTrackedStocks() {
         return trackedStocks;
@@ -41,20 +41,10 @@ public class SharedViewModel extends ViewModel {
         if (currentStocks != null) {
             for (StockModel stock : currentStocks) {
                 if (stock.getSymbol().equalsIgnoreCase(symbol)) {
-                    return true; // Stock is already tracked
+                    return true;
                 }
             }
         }
-        return false; // Stock is not tracked
-    }
-
-    public void removeStock(StockModel stock) {
-        List<StockModel> currentStocks = new ArrayList<>(trackedStocks.getValue());
-        if (currentStocks.contains(stock)) {
-            currentStocks.remove(stock);
-            trackedStocks.postValue(currentStocks);
-            DatabaseHelper db = new DatabaseHelper();
-            db.deleteStock(stock.getSymbol());
-        }
+        return false;
     }
 }

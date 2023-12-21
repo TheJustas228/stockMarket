@@ -10,6 +10,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.util.Objects;
+
 public class LoginActivity extends AppCompatActivity {
 
     private EditText usernameEditText;
@@ -27,9 +29,7 @@ public class LoginActivity extends AppCompatActivity {
         passwordEditText = findViewById(R.id.passwordEditText);
 
         findViewById(R.id.loginButton).setOnClickListener(view -> loginUser());
-        findViewById(R.id.gotoRegisterButton).setOnClickListener(view -> {
-            startActivity(new Intent(this, RegisterActivity.class));
-        });
+        findViewById(R.id.gotoRegisterButton).setOnClickListener(view -> startActivity(new Intent(this, RegisterActivity.class)));
     }
 
     private void loginUser() {
@@ -51,7 +51,7 @@ public class LoginActivity extends AppCompatActivity {
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();
                     } else {
-                        Toast.makeText(LoginActivity.this, "Authentication failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Authentication failed: " + Objects.requireNonNull(task.getException()).getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }

@@ -17,11 +17,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 public class MainActivity extends AppCompatActivity {
 
-    private FloatingActionButton fab;
-    private Toolbar toolbar;
     private DrawerLayout drawerLayout;
-    private NavigationView navigationView;
-    private ActionBarDrawerToggle toggle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,32 +26,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            // User not logged in, redirect to login
             startActivity(new Intent(this, LoginActivity.class));
             finish();
         }
 
-        // Initialize the Toolbar
-        toolbar = findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Initialize the FloatingActionButton
-        fab = findViewById(R.id.fab);
-        fab.setOnClickListener(view -> {
-            Toast.makeText(MainActivity.this, "FAB clicked!", Toast.LENGTH_SHORT).show();
-        });
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(view -> Toast.makeText(MainActivity.this, "FAB clicked!", Toast.LENGTH_SHORT).show());
 
-        // Initialize the DrawerLayout and NavigationView
         drawerLayout = findViewById(R.id.drawer_layout);
-        navigationView = findViewById(R.id.nav_view);
-
-        // Set up the ActionBarDrawerToggle for the DrawerLayout
-        toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Set up the NavigationItemSelectedListener for the NavigationView
-        navigationView.setNavigationItemSelectedListener(item -> handleNavigationItemSelected(item));
+        navigationView.setNavigationItemSelectedListener(this::handleNavigationItemSelected);
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new HomeFragment())
@@ -75,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
             selectedFragment = new NewsFragment();
         } else if (id == R.id.nav_logout) {
             logoutUser();
-            return true; // Return early since there's no fragment change for logout
+            return true;
         }
 
         if (selectedFragment != null) {

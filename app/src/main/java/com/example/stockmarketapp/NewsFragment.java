@@ -14,10 +14,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 import com.example.stockmarketapp.adapters.NewsAdapter;
 import com.example.stockmarketapp.models.NewsResponse;
 import com.example.stockmarketapp.models.StockModel;
@@ -27,23 +23,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class NewsFragment extends Fragment {
-    private RecyclerView newsRecyclerView;
     private NewsAdapter newsAdapter;
     private Map<String, Integer> articleCountPerStock;
-
-    private TextView tvNoStocksMessage;
-    private SharedViewModel viewModel;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_news, container, false);
-        newsRecyclerView = view.findViewById(R.id.newsRecyclerView);
-        tvNoStocksMessage = view.findViewById(R.id.tvNoStocksMessage);
+        RecyclerView newsRecyclerView = view.findViewById(R.id.newsRecyclerView);
+        TextView tvNoStocksMessage = view.findViewById(R.id.tvNoStocksMessage);
         newsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
 
         List<String> trackedStocks = new ArrayList<>();
         if (viewModel.getTrackedStocks().getValue() != null) {
@@ -76,7 +72,7 @@ public class NewsFragment extends Fragment {
         Log.d("NewsFragment", "Fetching news for stock: " + symbol);
         service.fetchNewsForStock(symbol, new Callback<NewsResponse>() {
             @Override
-            public void onResponse(Call<NewsResponse> call, Response<NewsResponse> response) {
+            public void onResponse(@NonNull Call<NewsResponse> call, @NonNull Response<NewsResponse> response) {
                 Log.d("NewsFragment", "Fetching news for stock: " + symbol);
                 if (response.isSuccessful() && response.body() != null) {
                     List<NewsArticle> articles = response.body().getNews();
@@ -86,7 +82,7 @@ public class NewsFragment extends Fragment {
                         for (NewsArticle article : articles) {
                             Log.d("NewsFragment", "Fetching news for stock: " + symbol);
                             if (articleCountPerStock.get(symbol) < 2) {
-                                article.setSymbol(symbol); // Set the symbol for each article
+                                article.setSymbol(symbol);
                                 newsAdapter.addNewsArticle(article);
                                 articleCountPerStock.put(symbol, articleCountPerStock.get(symbol) + 1);
                                 Log.d("NewsFragment", "Fetching news for stock: " + symbol);
@@ -94,12 +90,12 @@ public class NewsFragment extends Fragment {
                         }
                     }
 
-                    getActivity().runOnUiThread(() -> newsAdapter.notifyDataSetChanged());
+                    requireActivity().runOnUiThread(() -> newsAdapter.notifyDataSetChanged());
                 }
             }
 
             @Override
-            public void onFailure(Call<NewsResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<NewsResponse> call, @NonNull Throwable t) {
 
                 Log.e("NewsFragment", "Error fetching news for stock: " + symbol, t);
             }

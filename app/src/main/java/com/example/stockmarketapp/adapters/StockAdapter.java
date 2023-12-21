@@ -12,7 +12,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.stockmarketapp.DatabaseHelper;
 import com.example.stockmarketapp.R;
 import com.example.stockmarketapp.models.StockModel;
 
@@ -22,23 +21,12 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
 
     private List<StockModel> stocks;
     private boolean isRemoveModeActive = false;
-    private OnRemoveButtonClickListener onRemoveButtonClickListener;
+    private final OnRemoveButtonClickListener onRemoveButtonClickListener;
     private final OnItemClickListener onItemClickListener;
-    private boolean isRemoveButtonVisible = false;
-    private boolean showLatestPrice;
-    private Context context;
+    private final boolean showLatestPrice;
 
     public interface OnItemClickListener {
         void onItemClick(StockModel stock);
-    }
-
-    public void onRemoveButtonClicked(StockModel stock) {
-        if (stock != null) {
-            DatabaseHelper db = new DatabaseHelper();
-            db.deleteStock(stock.getSymbol());
-            Log.d("StockAdapter", "Stock removed: " + stock.getSymbol());
-            // Update the ViewModel and UI accordingly
-        }
     }
 
     public boolean isRemoveModeActive() {
@@ -49,12 +37,11 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
         void onRemoveButtonClicked(StockModel stock);
     }
 
-    public StockAdapter(Context context, List<StockModel> stocks, OnItemClickListener onItemClickListener, OnRemoveButtonClickListener onRemoveButtonClickListener) {
-        this.context = context;
+    public StockAdapter(Context ignoredContext, List<StockModel> stocks, OnItemClickListener onItemClickListener, OnRemoveButtonClickListener onRemoveButtonClickListener) {
         this.stocks = stocks;
         this.onItemClickListener = onItemClickListener;
         this.onRemoveButtonClickListener = onRemoveButtonClickListener;
-        this.showLatestPrice = true; // Always show the latest price
+        this.showLatestPrice = true;
     }
 
     public void setRemoveMode(boolean active) {
@@ -74,11 +61,9 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
     public void onBindViewHolder(@NonNull StockViewHolder holder, int position) {
         StockModel stock = stocks.get(position);
 
-        // Set the stock name and price
         holder.stockNameTextView.setText(stock.getSymbol());
         holder.stockPrice.setText(String.format("Close Price: $%.2f", stock.getClosePrice()));
 
-        // Calculate and display the change as a percentage
         if (stock.getClosePrice() != 0) {
             double changePercent = (stock.getChange() / stock.getClosePrice()) * 100;
             holder.stockChange.setText(String.format("Change: %.2f%%", changePercent));
@@ -88,11 +73,9 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
             holder.stockChange.setTextColor(Color.GRAY);
         }
 
-        // Update the latest price
         holder.stockLatestPriceTextView.setText(String.format("Latest Price: $%.2f", stock.getLatestPrice()));
         holder.stockLatestPriceTextView.setVisibility(showLatestPrice ? View.VISIBLE : View.GONE);
 
-        // Set click listeners for item and remove button
         holder.itemView.setOnClickListener(v -> {
             if (isRemoveModeActive) {
                 if (onRemoveButtonClickListener != null) {
@@ -107,7 +90,7 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
         });
 
         if (holder.removeButton != null) {
-            holder.removeButton.setVisibility(isRemoveButtonVisible ? View.VISIBLE : View.GONE);
+            holder.removeButton.setVisibility(View.GONE);
             holder.removeButton.setOnClickListener(v -> {
                 onRemoveButtonClickListener.onRemoveButtonClicked(stock);
                 removeItem(position);
@@ -140,8 +123,8 @@ public class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHol
 
         public StockViewHolder(@NonNull View itemView) {
             super(itemView);
-            stockNameTextView = itemView.findViewById(R.id.stockName); // Replace with your ID
-            stockLatestPriceTextView = itemView.findViewById(R.id.stockLatestPrice); // ID of the TextView in stock_item.xml
+            stockNameTextView = itemView.findViewById(R.id.stockName);
+            stockLatestPriceTextView = itemView.findViewById(R.id.stockLatestPrice);
             stockName = itemView.findViewById(R.id.stockName);
             stockPrice = itemView.findViewById(R.id.stockPrice);
             stockChange = itemView.findViewById(R.id.stockChange);

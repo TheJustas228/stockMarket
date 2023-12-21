@@ -22,7 +22,6 @@ import com.example.stockmarketapp.models.StockModel;
 import com.example.stockmarketapp.models.StockResponse;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import retrofit2.Call;
@@ -31,7 +30,6 @@ import retrofit2.Response;
 
 public class StockMarketFragment extends Fragment {
 
-    private RecyclerView stockMarketRecyclerView;
     private List<StockModel> stockMarketStocks;
     private List<StockModel> originalStockMarketStocks;
     private StockAdapter stockAdapter;
@@ -41,7 +39,7 @@ public class StockMarketFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_stock_market, container, false);
-        stockMarketRecyclerView = view.findViewById(R.id.stockMarketRecyclerView);
+        RecyclerView stockMarketRecyclerView = view.findViewById(R.id.stockMarketRecyclerView);
         stockMarketStocks = new ArrayList<>();
         originalStockMarketStocks = new ArrayList<>();
 
@@ -105,19 +103,19 @@ public class StockMarketFragment extends Fragment {
         Log.d("StockMarketFragment", "Sorting stocks by: " + sortType.name());
         switch (sortType) {
             case PRICE_ASCENDING:
-                Collections.sort(stockMarketStocks, (o1, o2) -> {
+                stockMarketStocks.sort((o1, o2) -> {
                     Log.d("Sort", "Comparing (Price Ascending): " + o1.getLatestPrice() + " - " + o2.getLatestPrice());
                     return Double.compare(o1.getLatestPrice(), o2.getLatestPrice());
                 });
                 break;
             case PRICE_DESCENDING:
-                Collections.sort(stockMarketStocks, (o1, o2) -> {
+                stockMarketStocks.sort((o1, o2) -> {
                     Log.d("Sort", "Comparing (Price Descending): " + o1.getLatestPrice() + " - " + o2.getLatestPrice());
                     return Double.compare(o2.getLatestPrice(), o1.getLatestPrice());
                 });
                 break;
             case CHANGE_ASCENDING:
-                Collections.sort(stockMarketStocks, (o1, o2) -> {
+                stockMarketStocks.sort((o1, o2) -> {
                     double changePercent1 = o1.getClosePrice() != 0 ? (o1.getChange() / o1.getClosePrice()) * 100 : 0;
                     double changePercent2 = o2.getClosePrice() != 0 ? (o2.getChange() / o2.getClosePrice()) * 100 : 0;
                     Log.d("Sort", "Comparing (Change Ascending): " + changePercent1 + "% - " + changePercent2 + "%");
@@ -125,7 +123,7 @@ public class StockMarketFragment extends Fragment {
                 });
                 break;
             case CHANGE_DESCENDING:
-                Collections.sort(stockMarketStocks, (o1, o2) -> {
+                stockMarketStocks.sort((o1, o2) -> {
                     double changePercent1 = o1.getClosePrice() != 0 ? (o1.getChange() / o1.getClosePrice()) * 100 : 0;
                     double changePercent2 = o2.getClosePrice() != 0 ? (o2.getChange() / o2.getClosePrice()) * 100 : 0;
                     Log.d("Sort", "Comparing (Change Descending): " + changePercent1 + "% - " + changePercent2 + "%");
@@ -133,13 +131,13 @@ public class StockMarketFragment extends Fragment {
                 });
                 break;
             case CLOSE_PRICE_ASCENDING:
-                Collections.sort(stockMarketStocks, (o1, o2) -> {
+                stockMarketStocks.sort((o1, o2) -> {
                     Log.d("Sort", "Comparing (Close Ascending): " + o1.getClosePrice() + " - " + o2.getClosePrice());
                     return Double.compare(o1.getClosePrice(), o2.getClosePrice());
                 });
                 break;
             case CLOSE_PRICE_DESCENDING:
-                Collections.sort(stockMarketStocks, (o1, o2) -> {
+                stockMarketStocks.sort((o1, o2) -> {
                     Log.d("Sort", "Comparing (Close Descending): " + o1.getClosePrice() + " - " + o2.getClosePrice());
                     return Double.compare(o2.getClosePrice(), o1.getClosePrice());
                 });
@@ -167,15 +165,14 @@ public class StockMarketFragment extends Fragment {
         Call<StockResponse> call = yahooFinanceService.getStockOptions(symbol);
         call.enqueue(new Callback<StockResponse>() {
             @Override
-            public void onResponse(Call<StockResponse> call, Response<StockResponse> response) {
+            public void onResponse(@NonNull Call<StockResponse> call, @NonNull Response<StockResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     StockResponse stockResponse = response.body();
                     StockResponse.Quote quote = stockResponse.getOptionChain().getResult().get(0).getQuote();
 
-                    // Use the correct method name for getting previous close price
                     double closePrice = quote.getRegularMarketPreviousClose();
                     double latestPrice = quote.getRegularMarketPrice();
-                    double change = quote.getRegularMarketChangePercent(); // Assuming change as a percentage
+                    double change = quote.getRegularMarketChangePercent();
 
                     StockModel stock = new StockModel();
                     stock.setSymbol(quote.getSymbol());
@@ -192,12 +189,9 @@ public class StockMarketFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(Call<StockResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<StockResponse> call, @NonNull Throwable t) {
                 Log.e("StockMarketFragment", "Error fetching stock data for " + symbol, t);
             }
         });
     }
-
-    // If you still want to handle stock clicks, define the method here
-    // and update your adapter to handle click events.
 }

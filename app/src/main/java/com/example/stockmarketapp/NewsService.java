@@ -9,7 +9,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class NewsService {
-    private YahooFinanceApi yahooFinanceApi;
+    private final YahooFinanceApi yahooFinanceApi;
 
     public NewsService() {
         Retrofit retrofit = new Retrofit.Builder()
@@ -19,8 +19,6 @@ public class NewsService {
 
         yahooFinanceApi = retrofit.create(YahooFinanceApi.class);
     }
-
-
 
     public void fetchNewsForStock(String symbol, Callback<NewsResponse> callback) {
         Call<NewsResponse> call = yahooFinanceApi.getNewsForStock(symbol);

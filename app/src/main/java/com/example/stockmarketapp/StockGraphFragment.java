@@ -1,5 +1,6 @@
 package com.example.stockmarketapp;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
@@ -56,10 +57,8 @@ public class StockGraphFragment extends Fragment {
     private String currentInterval = "1h";
 
     private SharedViewModel viewModel;
-    private StockModel currentStock; // The stock that this fragment is displaying
 
     public StockGraphFragment() {
-        // Required empty public constructor
     }
 
     public static StockGraphFragment newInstance(StockModel stock) {
@@ -77,50 +76,45 @@ public class StockGraphFragment extends Fragment {
             stock = (StockModel) getArguments().getSerializable(ARG_STOCK);
         }
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-        executorService = Executors.newSingleThreadExecutor(); // Initialize the ExecutorService here
+        executorService = Executors.newSingleThreadExecutor();
         handler = new Handler(Looper.getMainLooper());
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_stock_graph, container, false);
         chart = view.findViewById(R.id.chart);
         viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-        // Set the stock symbol at the top
         TextView tvStockSymbol = view.findViewById(R.id.tvStockSymbol);
         tvStockSymbol.setText(stock.getSymbol());
 
         TextView tvStockPrice = view.findViewById(R.id.tvStockPrice);
         tvStockPrice.setText("Latest Price: " + stock.getClosePrice() + "$");
 
-        // Set up buttons and fetch default data (now using 1h interval)
         setupButtonListeners(view);
         fetchStockData(stock.getSymbol(), "1h", "1d");
-        fetchAdditionalStockInfo(view, stock.getSymbol()); // Fixed this line
+        fetchAdditionalStockInfo(view, stock.getSymbol());
 
         Button trackStockButton = view.findViewById(R.id.btnTrackStock);
-        trackStockButton.setOnClickListener(v -> trackStock(stock)); // Pass 'stock' as an argument
+        trackStockButton.setOnClickListener(v -> trackStock(stock));
 
         return view;
     }
 
     private void trackStock(StockModel stock) {
         if (stock != null) {
-            fetchAdditionalStockInfo(null, stock.getSymbol()); // Fetch additional stock info
+            fetchAdditionalStockInfo(null, stock.getSymbol());
             DatabaseHelper db = new DatabaseHelper();
 
             if (!viewModel.isStockTracked(stock.getSymbol())) {
                 db.addStock(stock.getSymbol());
                 Log.d("StockGraphFragment", "Stock tracked: " + stock.getSymbol());
-                viewModel.trackStock(stock); // Track the stock if it's not already tracked
+                viewModel.trackStock(stock);
             } else {
                 Log.d("StockGraphFragment", "Stock already tracked: " + stock.getSymbol());
             }
         }
-    }
-
-    public interface OnStockTrackedListener {
-        void onStockTracked(StockModel stock);
     }
 
     private void fetchAdditionalStockInfo(View view, String symbol) {
@@ -146,24 +140,21 @@ public class StockGraphFragment extends Fragment {
                             .getJSONObject(0)
                             .getJSONObject("quote");
 
-                    // Extract the needed information
                     final String marketCap = quote.getString("marketCap");
                     final String previousClose = quote.getString("regularMarketPreviousClose");
                     double change = 0.0;
 
-                    // Handle potential JSONException for 'change'
                     try {
                         change = quote.getDouble("regularMarketChange");
                     } catch (JSONException e) {
                         Log.e("StockGraphFragment", "Error parsing 'regularMarketChange': " + e.getMessage());
                     }
 
-                    // Handle dividend date conversion
                     final String formattedDividendDate;
                     String formattedDividendDate1;
                     try {
                         long dividendDateTimestamp = quote.getLong("dividendDate");
-                        Date dividendDate = new Date(dividendDateTimestamp * 1000); // Convert to milliseconds
+                        Date dividendDate = new Date(dividendDateTimestamp * 1000);
                         SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH);
                         formattedDividendDate1 = dateFormat.format(dividendDate);
                     } catch (JSONException e) {
@@ -171,14 +162,12 @@ public class StockGraphFragment extends Fragment {
                         Log.e("StockGraphFragment", "Error parsing 'dividendDate': " + e.getMessage());
                     }
 
-                    // Extract other values
                     formattedDividendDate = formattedDividendDate1;
                     final String dividendYield = !quote.isNull("dividendYield") ? quote.getString("dividendYield") + "%" : "N/A";
                     final String bid = !quote.isNull("bid") ? quote.getString("bid") + "$" : "N/A";
                     final String ask = !quote.isNull("ask") ? quote.getString("ask") + "$" : "N/A";
                     final String regularMarketOpen = !quote.isNull("regularMarketOpen") ? quote.getString("regularMarketOpen") + "$" : "N/A";
 
-                    // Update the UI on the main thread
                     double finalChange = change;
                     handler.post(() -> {
                         if(isAdded() && view != null) {
@@ -203,7 +192,6 @@ public class StockGraphFragment extends Fragment {
                             TextView tvAsk = view.findViewById(R.id.tvAsk);
                             tvAsk.setText("Ask: " + ask);
 
-                            // Update the stock model with the fetched data
                             stock.setClosePrice(Double.parseDouble(previousClose));
                             stock.setChange(finalChange);
                         }
@@ -220,7 +208,6 @@ public class StockGraphFragment extends Fragment {
     }
 
     private void setupButtonListeners(View view) {
-        // Adjust other button listeners as needed
         view.findViewById(R.id.btnOneDay).setOnClickListener(v -> {
             currentInterval = "1d";
             fetchStockData(stock.getSymbol(), "1h", "1d");
@@ -257,8 +244,6 @@ public class StockGraphFragment extends Fragment {
                     result.append(line);
                 }
                 reader.close();
-
-                // Process the JSON response
                 JSONObject jsonObject = new JSONObject(result.toString());
                 List<Entry> entries = parseChartData(jsonObject);
                 handler.post(() -> updateChart(entries));
@@ -266,7 +251,6 @@ public class StockGraphFragment extends Fragment {
             } catch (Exception e) {
                 Log.e("StockGraphFragment", "Error fetching stock data: " + e.getMessage(), e);
                 handler.post(() -> {
-                    // Handle UI updates or error messages here
                 });
             } finally {
                 if (urlConnection != null) {
@@ -293,7 +277,7 @@ public class StockGraphFragment extends Fragment {
                     for (int i = 0; i < closeArray.length(); i++) {
                         if (!closeArray.isNull(i)) {
                             float closeValue = (float) closeArray.getDouble(i);
-                            long timestamp = timestampArray.getLong(i) * 1000; // Convert to milliseconds
+                            long timestamp = timestampArray.getLong(i) * 1000;
                             entries.add(new Entry(timestamp, closeValue));
                         }
                     }
@@ -305,7 +289,6 @@ public class StockGraphFragment extends Fragment {
     private void updateChart(List<Entry> entries) {
         LineDataSet dataSet = new LineDataSet(entries, "Stock Data");
 
-        // Disable drawing values on data points
         dataSet.setDrawValues(false);
 
         LineData lineData = new LineData(dataSet);
@@ -313,16 +296,14 @@ public class StockGraphFragment extends Fragment {
 
         XAxis xAxis = chart.getXAxis();
         xAxis.setValueFormatter(new DateAxisValueFormatter());
-        // Custom MarkerView to show price and date on tap
         CustomMarkerView mv = new CustomMarkerView(getContext(), R.layout.marker_view);
         chart.setMarker(mv);
 
         chart.invalidate();
     }
 
-    // Custom MarkerView class
     public class CustomMarkerView extends MarkerView {
-        private TextView tvContent;
+        private final TextView tvContent;
         private SimpleDateFormat dateFormat;
 
         public CustomMarkerView(Context context, int layoutResource) {
@@ -339,7 +320,7 @@ public class StockGraphFragment extends Fragment {
                 case "1d":
                     dateFormat = new SimpleDateFormat("dd MMM HH:00", Locale.ENGLISH);
                     break;
-                default: // For 1wk, 1mo, and 3mo
+                default:
                     dateFormat = new SimpleDateFormat("dd MMM", Locale.ENGLISH);
                     break;
             }
@@ -356,22 +337,19 @@ public class StockGraphFragment extends Fragment {
 
         @Override
         public MPPointF getOffset() {
-            return new MPPointF(-(getWidth() / 2), -getHeight());
+            return new MPPointF(-((float) getWidth() / 2), -getHeight());
         }
     }
 
-    // Custom formatter to convert timestamp to date
-    public class DateAxisValueFormatter extends ValueFormatter {
+    public static class DateAxisValueFormatter extends ValueFormatter {
         private final SimpleDateFormat mFormat;
 
         public DateAxisValueFormatter() {
-            // Specify the format you need
             this.mFormat = new SimpleDateFormat("dd MMM", Locale.ENGLISH);
         }
 
         @Override
         public String getAxisLabel(float value, AxisBase axis) {
-            // Convert timestamp to milliseconds and format it
             return mFormat.format(new Date((long) value));
         }
     }
@@ -380,7 +358,7 @@ public class StockGraphFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown(); // Shutdown the ExecutorService when the Fragment is destroyed
+            executorService.shutdown();
         }
     }
 }
